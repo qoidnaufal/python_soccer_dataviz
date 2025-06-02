@@ -82,6 +82,12 @@ plt.title("How different are Liga 1 games compared to other leagues?",
 #label for each markers
 #label = df.index
 for i, txt in enumerate(df.index):
-    ax.annotate(txt, (range(len(df.index))[i], df["Intensity"][i]), color = 'black', ha='center', va='bottom')
+    ax.annotate(
+        txt,
+        (range(len(df.index))[i], df["Intensity"][i]),
+        color = 'black',
+        ha='center',
+        va='bottom'
+        )
 
 plt.show()

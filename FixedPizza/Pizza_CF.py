@@ -12,14 +12,14 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 from mplsoccer import PyPizza
 
-minutes_played = 500
-season = '2022-23'
+minutes_played = 900
+season = '2024-25'
 competition_played = 'Liga 1'
 position_filter_1 = 'CF'
-max_age = 30
-minimum_height = 183
+# max_age = 30
+# minimum_height = 183
 
-player_name = 'T. Hidayat'
+player_name = 'Léo Gaúcho'
 
 # load in the data
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition_played} {season}')
@@ -58,18 +58,33 @@ df = df.loc[(df['Position'].str.contains(position_filter_1)) &
 #              & (df["Height"]>=minimum_height)
               ]
 
-params = ['xG per 90',
-          'xG/Shot', 'Shots per 90', 'Shots on target, %',
-          'Touches in box per 90', 'Offensive duels won, %',
-          'Aerial duels won, %', 'Smart passes per 90',
-          'Deep completions per 90', 'Shot assists per 90',
-          'xA per 90', 'Dribbles per 90',
-          'Successful dribbles, %', 'Progressive runs per 90',
-          'Fouls suffered per 90']
+goalscoring = [
+    'xG per 90', 'xG/Shot', 'Shots per 90',
+    'Shots on target, %', 'Touches in box per 90'
+]
+
+playmaking = [
+    'Smart passes per 90', 'Deep completions per 90',
+    'Shot assists per 90', 'xA per 90'
+]
+
+ballcarrying = [
+    'Dribbles per 90', 'Successful dribbles, %',
+    'Progressive runs per 90', 'Fouls suffered per 90'
+]
+
+duels = ['Offensive duels won, %', 'Aerial duels won, %']
+
+params = []
+params.extend(goalscoring)
+params.extend(playmaking)
+params.extend(ballcarrying)
+params.extend(duels)
 
 # call the player
 df = df.set_index('Player')
 idx_list = list(df.index)
+print(idx_list)
 
 player_minute = df.loc[player_name, 'Minutes played']
 player_club = df.loc[player_name, 'Team within selected timeframe']
@@ -96,18 +111,23 @@ values = [round(elem, 1) for elem in values]
 
 # COOK THE PIZZA!!!
 # give better spacing
-params_2 = ['xG per 90',
-          'xG/Shot', 'Shots per 90', 'Shots on \ntarget %',
-          'Touches in box \nper 90', 'Offensive duels \nwon %',
-          'Aerial duels \nwon %', 'Smart passes per 90',
-          'Deep completions \nper 90', 'Shot assists \nper 90',
-          'xA per 90', 'Dribbles \nper 90',
-          'Successful \ndribbles %', 'Progressive \nruns per 90',
-          'Fouls suffered \nper 90']
+params_2 = [
+    'xG per 90', 'xG/Shot', 'Shots per 90', 'Shots on \ntarget %',
+    'Touches in box \nper 90', 'Smart passes per 90',
+    'Deep completions \nper 90', 'Shot assists \nper 90',
+    'xA per 90', 'Dribbles \nper 90', 'Successful \ndribbles %',
+    'Progressive \nruns per 90', 'Fouls suffered \nper 90',
+    'Offensive duels \nwon %', 'Aerial duels \nwon %'
+]
+
+len_a = len(goalscoring)
+len_b = len(playmaking)
+len_c = len(ballcarrying)
+len_d = len(duels)
 
 # color for the slices and text
-slice_colors = ["#D70232"] * 7 + ["#4CBB17"] * 4 + ["#FF9300"] * 4
-text_colors = ["#000000"] * 15
+slice_colors = ["#D70232"] * len_a + ["#4CBB17"] * len_b + ["#FF9300"] * len_c + ["#1A78CF"] * len_d
+text_colors = ["#000000"] * len(params)
 
 # instantiate PyPizza class
 baker = PyPizza(
@@ -123,7 +143,7 @@ baker = PyPizza(
 # plot pizza
 fig, ax = baker.make_pizza(
     values,                          # list of values
-    figsize=(12, 12),                # adjust figsize according to your need
+    figsize=(9, 9),                  # adjust figsize according to your need
     color_blank_space="same",        # use same color to fill blank space
     slice_colors=slice_colors,       # color for individual slices
     value_colors=text_colors,        # color for the value-text
@@ -135,11 +155,11 @@ fig, ax = baker.make_pizza(
         zorder=2, linewidth=1
     ),                   # values to be used when plotting slices
     kwargs_params=dict(
-        color="#000000", fontsize=11,
+        color="#000000", fontsize=10,
         va="center",
     ),                   # values to be used when adding parameter
     kwargs_values=dict(
-        color="#ffffff", fontsize=12,
+        color="#ffffff", fontsize=10,
         zorder=3,
         bbox=dict(
             edgecolor="#000000", facecolor="green",
@@ -150,7 +170,7 @@ fig, ax = baker.make_pizza(
 
 # add title
 fig.text(
-    0.515, 0.99, (f'{player_name} ({player_age} years old) - {player_club} - {player_height} cm'), size=22,
+    0.515, 0.97, (f'{player_name} - {player_club} ({player_age} years old)'), size=18,
     ha="center", color="#000000"
 )
 
@@ -161,42 +181,21 @@ SUB_3 = season
 SUB_4 = player_minute
 
 fig.text(
-    0.515, 0.945, f"Position: {SUB_1} | Goals: {player_goals} | Assists: {player_assists}\n{SUB_2} | {SUB_3} | {player_minute} minutes played",
-    size=15,
+    0.515, 0.925, f"Position: {SUB_1} | Goals: {player_goals} | Assists: {player_assists}\n{SUB_2} | {SUB_3} | {player_minute} minutes played",
+    size=12,
     ha="center", color="#000000"
 )
 
 
 # add credits
+TEXT_1 = "Template for CF"
 CREDIT_1 = "Data: Wyscout"
-CREDIT_2 = "@novalaziz"
+CREDIT_2 = "Qoid Naufal"
 
 fig.text(
-    0.1, 0.1, f"{CREDIT_1}\n{CREDIT_2}", size=10,
+    0.95, 0.05, f"{TEXT_1}\n{CREDIT_1}\n{CREDIT_2}", size=10,
     color="#000000",
-    ha="left"
+    ha="right"
 )
-
-# add text
-fig.text(
-    0.362, 0.925, "Attacking      Playmaking       Ball-carrying", size=14,
-    color="#000000"
-)
-
-# add rectangles
-fig.patches.extend([
-    plt.Rectangle(
-        (0.332, 0.9225), 0.025, 0.015, fill=True, color="#D70232",
-        transform=fig.transFigure, figure=fig
-    ),    
-    plt.Rectangle(
-        (0.444, 0.9225), 0.025, 0.015, fill=True, color="#4CBB17",
-        transform=fig.transFigure, figure=fig
-    ),
-    plt.Rectangle(
-        (0.573, 0.9225), 0.025, 0.015, fill=True, color="#FF9300",
-        transform=fig.transFigure, figure=fig
-    ),
-])
 
 plt.show()

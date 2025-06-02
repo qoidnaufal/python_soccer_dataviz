@@ -21,6 +21,8 @@ minimum_minutes = 900
 x_value = "Defensive duels per 90"
 y_value = "Fouls per 90"
 
+player_name = "T. Febriyanto"
+
 # lets open the data from file
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -35,8 +37,8 @@ event_list = list(df.columns)
 
 # do this to create some datasets
 df = df.set_index('Player')
-df_taufiq = df.loc[df.index == "T. Febriyanto"]
-df_other = df.loc[df.index != "T. Febriyanto"]
+df_taufiq = df.loc[df.index == player_name]
+df_other = df.loc[df.index != player_name]
 
 x = df[x_value]
 y = df[y_value]
@@ -53,7 +55,7 @@ points1 = ax.scatter(x1, y1, c="green")
 points2 = ax.scatter(x2, y2, c="red", s=85)
 
 # add some information along the axis
-title_string = "Taufiq Febriyanto the Foul Specialist"
+title_string = f"{player_name} Tendency to Make Foul"
 ax.set_xlabel(x_value, size='11', labelpad=12)
 ax.set_ylabel(y_value, size='11', labelpad=12)
 ax.set_title(title_string, size="22")

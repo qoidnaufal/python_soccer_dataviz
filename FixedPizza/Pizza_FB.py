@@ -20,7 +20,7 @@ position_filter_1 = 'RB'
 position_filter_2 = 'LB'
 position_filter_3 = 'WB'
 
-player_name = 'F. Saputra'
+player_name = 'Yance Sayuri'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -29,10 +29,10 @@ df = pd.concat([pd.read_excel(f) for f in all_filenames]).drop_duplicates()
 df = df.reset_index()
 df = df.drop(['index'], axis=1)
 
-df.loc[410, 'Player'] = 'Ady Setiawan'
-df.loc[460, 'Player'] = 'Arif Setiawan'
-df.loc[373, 'Player'] = 'Yakob Sayuri'
-df.loc[515, 'Player'] = 'Yance Sayuri'
+df.loc[79, 'Player'] = 'Ady Setiawan'
+df.loc[164, 'Player'] = 'Arif Setiawan'
+df.loc[242, 'Player'] = 'Yakob Sayuri'
+df.loc[61, 'Player'] = 'Yance Sayuri'
 
 #df = pd.read_excel('C:/Users/62878/Documents/Wyscout/Liga 1/2019 - Liga 1 - complete.xlsx')
 

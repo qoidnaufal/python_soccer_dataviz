@@ -14,12 +14,12 @@ import numpy as np
 from mplsoccer import PyPizza
 
 minimum_minutes = 600
-competition = 'K3'
-season = '2023'
+competition = 'Liga 1'
+season = '2024-25'
 position_1 = 'CM'
 position_2 = 'DM'
 
-player_name = 'Lee Min-Woo'
+player_name = 'Jonata Machado'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -27,7 +27,8 @@ all_filenames = [i for i in glob.glob('*.{}'.format(extension))]
 df = pd.concat([pd.read_excel(f) for f in all_filenames]).drop_duplicates()
 
 #df = pd.read_excel('C:/Users/62878/Documents/Wyscout/Liga 1/2019 - Liga 1 - complete.xlsx')
-#col_list = list(df.columns)
+# col_list = list(df.columns)
+# print(list(df.columns))
 #position_list = df['Position'].tolist()
 
 # parameters adjusment
@@ -53,31 +54,46 @@ df['Total dribbles'] = df['Dribbles per 90'] * df['90s played']
 df['Successful dribbles'] = df['Total dribbles'] * df['Successful dribbles, %']
 df['Dribbles completed p90'] = df['Successful dribbles'] / df['90s played']
 
-parameters = ['xG per 90',
-              'Shots per 90', 'xG/Shot', 'Touches in box per 90',
-              'Accurate short / medium passes, %',
-              'Accurate long passes, %', 'Passes to final third p90',
-              'Progressive passes p90',
-              'Shot assists per 90', 'xA per 90',
-              'Dribbles completed p90', 'Progressive runs per 90',
-              'PAdj Sliding tackles', 'PAdj Interceptions', 
-              'Fouls per 90', 'Defensive duels won, %',
-              'Aerial duels won, %']
+attacking = ['Shots per 90', 'xG/Shot', 'Touches in box per 90']
+
+playmaking = [
+    'Passes per 90', 'Accurate short / medium passes, %',
+    'Accurate long passes, %', 'Passes to final third p90',
+    'Progressive passes p90',
+    'Shot assists per 90', 'xA per 90'
+]
+
+ballhandling = ['Offensive duels won, %', 'Dribbles completed p90', 'Progressive runs per 90']
+
+defensive = [
+    'PAdj Sliding tackles', 'PAdj Interceptions', 
+    'Fouls per 90', 'Defensive duels won, %',
+    'Aerial duels won, %'
+]
+
+parameters = []
+parameters.extend(attacking)
+parameters.extend(playmaking)
+parameters.extend(ballhandling)
+parameters.extend(defensive)
 
 # minute & position filter
 df_1 = df.loc[
     (df['Position'].str.contains(position_1))
-            & (df['Minutes played']>=minimum_minutes)
-            ]
+    & (df['Minutes played']>=minimum_minutes)
+    & (df['Position'].str.contains('AMF') == False)
+]
 df_2 = df.loc[
     (df['Position'].str.contains(position_2)
-     & (df['Minutes played']>=minimum_minutes))
-    ]
+    & (df['Minutes played']>=minimum_minutes))
+    & (df['Position'].str.contains('AMF') == False)
+]
 df_mf = pd.concat([df_1,df_2]).drop_duplicates()
 
 # call the player
 df_mf = df_mf.set_index('Player')
 idx_list = list(df_mf.index)
+print(idx_list)
 
 player_minute = df_mf.loc[player_name, 'Minutes played']
 player_club = df_mf.loc[player_name, 'Team within selected timeframe']
@@ -102,22 +118,26 @@ values = [round(elem, 1) for elem in values]
 
 # COOK THE PIZZA!!!
 # give better spacing
-params_2 = ['xG per 90', 'Shots per 90',
-            'xG/Shot', 'Touches in \nbox per 90',
-            'Accurate short / \nmedium passes %',
-            'Accurate \nlong passes %', 'Passes to final \nthird per 90',
-            'Progressive \npasses per 90',
-            'Shot assists \nper 90', 'xA per 90',
-            'Dribbles \nper 90', 'Progressive \ncarries per 90',
-            'PAdj Tackles', 'PAdj \nInterceptions',
-            'Cautiousness', 'Defensive \nduels won %',
-            'Aerial duels \nwon %']
+params_2 = [
+    'Shots per 90', 'xG/Shot', 'Touches in \nbox per 90',
+    'Passes per 90', 'Accurate short / \nmedium passes %',
+    'Accurate \nlong passes %', 'Passes to final \nthird per 90',
+    'Progressive \npasses per 90',
+    'Shot assists \nper 90', 'xA per 90','Offensive duels \nwon, %',
+    'Dribbles \nper 90', 'Progressive \ncarries per 90',
+    'PAdj Tackles', 'PAdj \nInterceptions',
+    'Cautiousness', 'Defensive \nduels won %',
+    'Aerial duels \nwon %'
+]
 
 # color for the slices and text
-slice_colors = ["#D70232"] * 4 + ["#4CBB17"] * 6 + ["#FF9300"] * 2 + ["#1A78CF"] * 5
-text_colors = ["#000000"] * 17
+a = len(attacking)
+p = len(playmaking)
+b = len(ballhandling)
+d = len(defensive)
+slice_colors = ["#D70232"] * a + ["#4CBB17"] * p + ["#FF9300"] * b + ["#1A78CF"] * d
+text_colors = ["#000000"] * len(parameters)
 
-# instantiate PyPizza class
 baker = PyPizza(
     params=params_2,                 # list of parameters
     background_color="#EBEBE9",      # background color
@@ -128,10 +148,10 @@ baker = PyPizza(
     other_circle_ls="-."             # linestyle for other circles
 )
 
-# plot pizza
+# instantiate PyPizza class
 fig, ax = baker.make_pizza(
     values,                          # list of values
-    figsize=(12, 12),                # adjust figsize according to your need
+    figsize=(9, 9),                  # adjust figsize according to your need
     color_blank_space="same",        # use same color to fill blank space
     slice_colors=slice_colors,       # color for individual slices
     value_colors=text_colors,        # color for the value-text
@@ -143,11 +163,11 @@ fig, ax = baker.make_pizza(
         zorder=2, linewidth=1
     ),                   # values to be used when plotting slices
     kwargs_params=dict(
-        color="#000000", fontsize=11,
+        color="#000000", fontsize=10,
         va="center",
     ),                   # values to be used when adding parameter
     kwargs_values=dict(
-        color="#ffffff", fontsize=12,
+        color="#ffffff", fontsize=10,
         zorder=3,
         bbox=dict(
             edgecolor="#000000", facecolor="green",
@@ -158,7 +178,7 @@ fig, ax = baker.make_pizza(
 
 # add title
 fig.text(
-    0.515, 0.99, (f'{player_name} - {player_club} ({player_age} years old)'), size=22,
+    0.515, 0.97, (f'{player_name} - {player_club} ({player_age} years old)'), size=18,
     ha="center", color="#000000"
 )
 
@@ -169,45 +189,69 @@ SUB_3 = season
 SUB_4 = player_minute
 
 fig.text(
-    0.515, 0.945, f"Position: {SUB_1} | Goals: {player_goals} | Assists: {player_assists}\n{SUB_2} | {SUB_3} | {player_minute} minutes played",
-    size=15,
+    0.515, 0.925, f"Position: {SUB_1} | Goals: {player_goals} | Assists: {player_assists}\n{SUB_2} | {SUB_3} | {player_minute} minutes played",
+    size=12,
     ha="center", color="#000000"
 )
 
+
 # add credits
+TEXT_1 = "Template for CM & DM"
 CREDIT_1 = "Data: Wyscout"
-CREDIT_2 = "@novalaziz"
+CREDIT_2 = "Qoid Naufal"
 
 fig.text(
-    0.1, 0.1, f"{CREDIT_1}\n{CREDIT_2}", size=10,
+    0.95, 0.05, f"{TEXT_1}\n{CREDIT_1}\n{CREDIT_2}", size=10,
     color="#000000",
-    ha="left"
+    ha="right"
 )
 
-# add text
-fig.text(
-    0.305, 0.925, "Attacking      Playmaking      Ball-carrying      Defending", size=14,
-    color="#000000"
-)
+# attacking = "Attacking"
+# playmaking = "Playmaking"
+# ball_carrying = "Ball-carrying"
+# defending = "Defending"
 
-# add rectangles
-fig.patches.extend([
-    plt.Rectangle(
-        (0.277, 0.9225), 0.025, 0.015, fill=True, color="#D70232",
-        transform=fig.transFigure, figure=fig
-    ),
-    plt.Rectangle(
-        (0.386, 0.9225), 0.025, 0.015, fill=True, color="#4CBB17",
-        transform=fig.transFigure, figure=fig
-    ),
-    plt.Rectangle(
-        (0.510, 0.9225), 0.025, 0.015, fill=True, color="#FF9300",
-        transform=fig.transFigure, figure=fig
-    ),
-    plt.Rectangle(
-        (0.647, 0.9225), 0.025, 0.015, fill=True, color="#1A78CF",
-        transform=fig.transFigure, figure=fig
-    ),
-])
+# attacking_start = 0.140
+# playmaking_start = (attacking_start + 0.2)
+# ball_carrying_start = (playmaking_start + 0.2)
+# defending_start = (ball_carrying_start + 0.2)
+
+# # add text
+# fig.text(
+#     attacking_start, 0.925, attacking, size=14,
+#     color="#000000"
+# )
+# fig.text(
+#     playmaking_start, 0.925, playmaking, size=14,
+#     color="#000000"
+# )
+# fig.text(
+#     ball_carrying_start, 0.925, ball_carrying, size=14,
+#     color="#000000"
+# )
+# fig.text(
+#     defending_start, 0.925, defending, size=14,
+#     color="#000000"
+# )
+
+# # add rectangles
+# fig.patches.extend([
+#     plt.Rectangle(
+#         (attacking_start + (len(attacking)/100) + 0.02, 0.9225), 0.025, 0.015, fill=True, color="#D70232",
+#         transform=fig.transFigure, figure=fig
+#     ),
+#     plt.Rectangle(
+#         (playmaking_start + (len(playmaking)/100 + 0.03), 0.9225), 0.025, 0.015, fill=True, color="#4CBB17",
+#         transform=fig.transFigure, figure=fig
+#     ),
+#     plt.Rectangle(
+#         (ball_carrying_start + (len(ball_carrying)/100 + 0.02), 0.9225), 0.025, 0.015, fill=True, color="#FF9300",
+#         transform=fig.transFigure, figure=fig
+#     ),
+#     plt.Rectangle(
+#         (defending_start + (len(defending)/100) + 0.03, 0.9225), 0.025, 0.015, fill=True, color="#1A78CF",
+#         transform=fig.transFigure, figure=fig
+#     ),
+# ])
 
 plt.show()

@@ -8,14 +8,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import math
-#from highlight_text import fig_text
+import os
+import glob
 import numpy as np
 import matplotlib.ticker as ticker
 
 competition = "Liga 1"
-season = 2022-23
+season = "2022-23"
+size = 20
+minutes_played = 900
 
-df = pd.read_excel(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
+os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
+extension = 'xlsx'
+all_filenames = [i for i in glob.glob('*.{}'.format(extension))] # explain for loop & range + len
+df = pd.concat([pd.read_excel(f) for f in all_filenames]).drop_duplicates()
+
 col_list = list(df.columns)
 position_list = df['Position'].tolist()
 
@@ -51,16 +58,13 @@ params = ['Defensive duels won, %', 'Aerial duels won, %',
           'Goals/xG ratio', 'xG/Shot'
           ]
 
-# minute & position filter
-minutes_played = 500
-season = '2022-23'
 position_filter = 'CB'
 #nationality = 'Indonesia'
 df = df.loc[(df['Position'].str.contains(position_filter)) &
                (df['Minutes played']>=minutes_played)]
 #df = df.loc[df['Passport country'].str.contains(nationality)]
 df = df.set_index('Player')
-df = df.drop(['A. Figo', 'A. Tanjung', 'Y. Sayuri'])
+# df = df.drop(['A. Figo', 'A. Tanjung', 'Y. Sayuri'])
 #idx_list = list(df.index)
 
 # show parameters-based columns only
@@ -90,47 +94,58 @@ goalscoring = ['xG/Shot']
 defending_value = z_score[defending].sum(axis=1)
 playmaking_value = z_score[playmaking].sum(axis=1)
 ballcarrying_value = z_score[ballcarrying].sum(axis=1)
-goalscoring_value = z_score[goalscoring].sum(axis=1)
+# goalscoring_value = z_score[goalscoring].sum(axis=1)
 
 cb_rank = pd.concat({'Defending': defending_value,
                      'Playmaking': playmaking_value,
                      'Ball carrying': ballcarrying_value,
-                     'Goal scoring': goalscoring_value},axis=1)
+                     # 'Goal scoring': goalscoring_value
+                 }, axis=1)
 
 cb_rank['All rating'] = cb_rank.mean(axis=1)
 
-#mf_rank_percentile = mf_rank.apply(lambda x: 100 - (stats.norm.sf(x) * 100))
+# mf_rank_percentile = mf_rank.apply(lambda x: 100 - (stats.norm.sf(x) * 100))
 
-cb_top10 = cb_rank.sort_values('All rating', ascending=False).head(10)
+top_cb = cb_rank.sort_values('All rating', ascending=False).head(size)
+# top_cb = cb_rank.sort_values('Defending', ascending=False).head(size)
 
-cb_top10['Playmaking'] = cb_top10['Playmaking'].apply(lambda x: x + (math.fabs(cb_top10['Playmaking'].min())*1.05))
-cb_top10['Goal scoring'] = cb_top10['Goal scoring'].apply(lambda x: x + (math.fabs(cb_top10['Goal scoring'].min())*1.05))
-cb_top10['Ball carrying'] = cb_top10['Ball carrying'].apply(lambda x: x + (math.fabs(cb_top10['Ball carrying'].min())*1.05))
-cb_top10['Defending'] = cb_top10['Defending'].apply(lambda x: x + (math.fabs(cb_top10['Defending'].min())*1.05))
+top_cb['Playmaking'] = top_cb['Playmaking'].apply(lambda x: x + (math.fabs(top_cb['Playmaking'].min())*1.05))
+# top_cb['Goal scoring'] = top_cb['Goal scoring'].apply(lambda x: x + (math.fabs(top_cb['Goal scoring'].min())*1.05))
+top_cb['Ball carrying'] = top_cb['Ball carrying'].apply(lambda x: x + (math.fabs(top_cb['Ball carrying'].min())*1.05))
+top_cb['Defending'] = top_cb['Defending'].apply(lambda x: x + (math.fabs(top_cb['Defending'].min())*1.05))
 
-cb_top10 = cb_top10.sort_values('All rating')
-players_name = list(cb_top10.index)
+top_cb = top_cb.sort_values('All rating')
+# top_cb = top_cb.sort_values('Defending')
+players_name = list(top_cb.index)
 
 #PLOT PLOT PLOT
-rank_param = ['Defending', 'Playmaking', 'Ball carrying', 'Goal scoring']
-rank_values = cb_top10.loc[players_name, :].values.tolist()
-fields = rank_param
-colors = ['#1D2F6F', '#8390FA', '#6EAF46', '#FAC748']
+rank_param = [
+    'Defending',
+    'Playmaking',
+    'Ball carrying',
+    # 'Goal scoring'
+]
+rank_values = top_cb.loc[players_name, :].values.tolist()
+colors = [
+    '#1D2F6F',
+    '#8390FA',
+    '#FFA500',
+    # '#FAC748'
+]
 labels = players_name
 
 # figure and axis
-fig, ax = plt.subplots(1, figsize=(12, 10))
+fig, ax = plt.subplots(1, figsize=(14, 8))
 
 # plot bars
-left = len(cb_top10) * [0]
-for idx, name in enumerate(fields):
-    plt.barh(cb_top10.index, cb_top10[name], left = left, color=colors[idx])
-    left = left + cb_top10[name]
+left = len(top_cb) * [0]
+for idx, category in enumerate(rank_param):
+    plt.barh(top_cb.index, top_cb[category], left = left, color=colors[idx])
+    left = left + top_cb[category]
 
 # title, legend, labels
-plt.title('Top 10 Centerbacks in Liga 1\n', loc='left', size=20, style='oblique')
-plt.legend(fields, bbox_to_anchor=([0.55, 1, 0, 0]), ncol=4, frameon=False)
-#plt.xlabel('Percentile value')
+plt.title(f'Top {size} Centerbacks in Liga 1\n', loc='left', size=20, style='oblique')
+plt.legend(rank_param, bbox_to_anchor=([0.55, 1, 0, 0]), ncol=len(rank_param), frameon=False)
 
 # remove spines
 ax.spines['right'].set_visible(False)
@@ -147,7 +162,7 @@ CREDIT_2 = "viz by: Qoid Naufal"
 CREDIT_3 = 'minimum minutes played = %s' % (minutes_played)
 
 fig.text(
-    1.04, 0.12, f"{CREDIT_1}\n{CREDIT_2}\n{CREDIT_3}", size=10,
+    0.99, 0.12, f"{CREDIT_1}\n{CREDIT_2}\n{CREDIT_3}", size=10,
     color="#000000",
     ha="right"
 )

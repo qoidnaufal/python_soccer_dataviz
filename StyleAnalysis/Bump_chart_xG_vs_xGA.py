@@ -163,7 +163,7 @@ ax.spines['left'].set_color('white')
 ax.spines['bottom'].set_color('white')
 ax.tick_params(axis='x', colors='white')
 ax.tick_params(axis='y', colors='white')
-ax.get_xaxis().set_ticks([])
+#ax.get_xaxis().set_ticks([])
   
 # plot the data
 plt.plot(x, y1, color = 'blue', linewidth=3)
