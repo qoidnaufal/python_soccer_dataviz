@@ -3,18 +3,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
-df = pd.read_csv("~/Documents/LearnPython/tsg2425/data/ap.csv")
-df = df[['Klub', 'AP minutes', '%']]
-df = df.set_index('Klub')
+TOTAL_MINUTES = 11 * 90 * 34 / 100
+
+df = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
+df['%'] = df['Adjusted Total Minutes'] / TOTAL_MINUTES
+df = df.sort_values(by=['Adjusted Total Minutes'], ascending=False)
+df = df.set_index('Club Name')
 
 print(df)
 
 teams = df.index
 idx = np.arange(len(teams))
 
-minutes = df['AP minutes']
-max_minutes = df['AP minutes'].max()
-percentage = df['%']
+minutes = df['Adjusted Total Minutes']
+max_minutes = df['Adjusted Total Minutes'].max()
+percentage = df['%'].apply(lambda x: float('%.2f'%(x)))
 adjusted_p = df['%'].apply(lambda x: max_minutes * x / 100)
 
 # zscore = df.apply(stats.zscore)

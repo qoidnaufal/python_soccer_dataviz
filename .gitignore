@@ -127,6 +127,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+soccer_venv
 
 # Spyder project settings
 .spyderproject

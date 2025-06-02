@@ -35,12 +35,12 @@ foreign_contribution = foreign_minutes / total_minutes
 #
 # ###################################################
 
-ap = pd.read_csv("~/Documents/LearnPython/tsg2425/data/ap.csv")
-ap = ap[['Klub', 'AP minutes', '%']]
-ap = ap.set_index('Klub')
+ap = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
+ap = ap.sort_values(by=['Adjusted Total Minutes'], ascending=False)
+ap = ap.set_index('Club Name')
 
-ap_minutes = ap['AP minutes'].sum()
-max_ap_minutes = ap['AP minutes'].max()
+ap_minutes = ap['Adjusted Total Minutes'].sum()
+max_ap_minutes = ap['Adjusted Total Minutes'].max()
 ap_contribution = ap_minutes / total_minutes
 
 # ###################################################
@@ -63,7 +63,7 @@ bottom = 1
 width = 0.2
 
 # bar chart
-ap_params = ap['AP minutes'].apply(lambda x: x / ap_minutes).to_list()
+ap_params = ap['Adjusted Total Minutes'].apply(lambda x: x / ap_minutes).to_list()
 ap_labels = ap.index.to_list()
 print(ap_labels)
 
@@ -93,7 +93,7 @@ for j, (height, label) in enumerate([*zip(ap_params, ap_labels)]):
     bottom -= height
     bc = ax2.bar(0, height, width, bottom=bottom, color=colors.get(label), label=label,
                  alpha=max([height*ap_minutes/(max_ap_minutes), 0.3]))
-    value = ap.loc[label, 'AP minutes']
+    value = ap.loc[label, 'Adjusted Total Minutes']
     ax2.bar_label(bc, labels=[value], label_type='center')
 
 ax2.set_title('Minutes Contribution')
