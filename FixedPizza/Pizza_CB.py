@@ -18,7 +18,7 @@ competition = 'Liga 1'
 season = '2024-25'
 position_centerbacks = 'CB'
 
-player_name = 'T. Kozubaev'
+player_name = 'T. Martić'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -27,31 +27,45 @@ df = pd.concat([pd.read_excel(f) for f in all_filenames]).drop_duplicates()
 
 #df = pd.read_excel('C:/Users/62878/Documents/Wyscout/League data/Liga 1 - 20230303.xlsx')
 col_list = list(df.columns) #explain about listing stuff you want to check
+# print(col_list)
 position_list = df['Position'].tolist()
 
-# parameters adjusment
-df['Verticality'] = df['Forward passes per 90']/(df['Forward passes per 90'] + # explain how to access each column and do operations
-                                                 df['Lateral passes per 90'] +
-                                                 df['Back passes per 90'])
+nineties = df['Minutes played'] / 90
+df['Total Interceptions'] = df['Interceptions per 90'] * nineties
+df['Possession'] = df ['Total Interceptions'] * 30 / df['PAdj Interceptions']
 
-parameters = ['Accurate short / medium passes, %',
-              'Accurate long passes, %', 'Passes to final third per 90',
-              'Accurate passes to final third, %',
-              'Progressive passes per 90', 'Accurate progressive passes, %',
-              'Dribbles per 90', 'Successful dribbles, %',
-              'Progressive runs per 90', 'PAdj Sliding tackles', 
-              'PAdj Interceptions', 'Defensive duels won, %',
-              'Aerial duels won, %', 'Fouls per 90']
+df['Successful def actions'] = df['Successful defensive actions per 90'] * nineties
+df['PAdj Successful def actions'] = df['Successful def actions'] * 30 / df['Possession']
+
+playmaking =[
+    'Accurate short / medium passes, %',
+    'Accurate long passes, %', 'Passes to final third per 90',
+    'Accurate passes to final third, %',
+    'Progressive passes per 90', 'Accurate progressive passes, %'
+]
+ballcarrying = [
+    'Dribbles per 90', 'Successful dribbles, %', 'Progressive runs per 90'
+]
+defending = [
+    'PAdj Sliding tackles',  'PAdj Interceptions', 'PAdj Successful def actions',
+    'Defensive duels won, %', 'Aerial duels won, %', 'Fouls per 90'
+]
+
+parameters = []
+parameters.extend(playmaking)
+parameters.extend(ballcarrying)
+parameters.extend(defending)
 
 # minute & position filter
 df_cb = df.loc[
     (df['Position'].str.contains(position_centerbacks) # explain the use of .str.contains
      & (df['Minutes played']>=minimum_minutes)) # do this first explain eq operation
-    ]
+]
 
 # call the player
 df_cb = df_cb.set_index('Player')
 idx_list = list(df_cb.index)
+print(idx_list)
 
 player_minute = df_cb.loc[player_name, 'Minutes played']
 player_club = df_cb.loc[player_name, 'Team within selected timeframe']
@@ -71,38 +85,6 @@ percentile = z_score.apply(lambda x: 100 - (stats.norm.sf(x) * 100))
 #percentile = z_score.apply(lambda x: (100 - (stats.norm.sf(x) * 100)) * league_ratio)
 #percentile = z_score.apply(lambda x: stats.norm.cdf(x) * 100)
 
-#rating the player
-passing = [
-    'Passes to final third per 90',
-    'Accurate passes to final third, %',
-    'Progressive passes per 90',
-    'Accurate progressive passes, %'
-    ]
-
-ballcarrying = ['Dribbles per 90', 'Successful dribbles, %','Progressive runs per 90']
-
-defending = [
-    'PAdj Sliding tackles',
-    'PAdj Interceptions', 
-    'Defensive duels won, %',
-    'Aerial duels won, %'
-    ]
-
-passing_value = percentile[passing].mean(axis=1)
-ballcarrying_value = percentile[ballcarrying].mean(axis=1)
-defending_value = percentile[defending].mean(axis=1)
-
-# cb_rating = pd.concat({'Passing': passing_value,
-#                      'Ball carrying': ballcarrying_value,
-#                      'Defending': defending_value},axis=1)
-
-# cb_rating['Overall rating'] = cb_rating.mean(axis=1)
-
-# passing_rating = np.round_(cb_rating.loc[player_name, 'Passing'])
-# ballcarrying_rating = np.round_(cb_rating.loc[player_name, 'Ball carrying'])
-# defending_rating = np.round_(cb_rating.loc[player_name, 'Defending'])
-# overall_rating = np.round_(cb_rating.loc[player_name, 'Overall rating'])
-
 # Prepare the ingredients
 values = percentile.loc[player_name, :].values.tolist()
 values = [round(elem, 1) for elem in values]
@@ -121,14 +103,18 @@ params_2 = [
     'Progressive \ncarries per 90',
     'PAdj Tackles', 
     'PAdj \nInterceptions',
+    'PAdj Successful \ndefensive actions',
     'Defensive \nduels won %',
     'Aerial duels \nwon %',
     'Fouls per 90'
     ]
 
 # color for the slices and text
-slice_colors = ["#4CBB17"] * 6 + ["#FF9300"] * 3 + ["#1A78CF"] * 5
-text_colors = ["#000000"] * 14
+a = len(playmaking)
+b = len(ballcarrying)
+c = len(defending)
+slice_colors = ["#4CBB17"] * a + ["#FF9300"] * b + ["#1A78CF"] * c
+text_colors = ["#000000"] * len(parameters)
 
 # instantiate PyPizza class
 baker = PyPizza(
@@ -189,7 +175,7 @@ fig.text(
 
 
 # add credits
-TEXT_1 = "Template for CM & AM"
+TEXT_1 = "Template for CB"
 CREDIT_1 = "Data: Wyscout"
 CREDIT_2 = "Qoid Naufal"
 

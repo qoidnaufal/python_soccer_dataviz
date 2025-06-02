@@ -13,13 +13,13 @@ import scipy.stats as stats
 import numpy as np
 from mplsoccer import PyPizza
 
-minimum_minutes = 600
+minimum_minutes = 750
 competition = 'Liga 1'
 season = '2024-25'
 position_1 = 'CM'
 position_2 = 'DM'
 
-player_name = 'Jonata Machado'
+player_name = 'R. Enero'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -40,33 +40,40 @@ df['Verticality'] = df['Forward passes per 90']/(df['Forward passes per 90'] +
 
 df['Assists/xA ratio'] = (df['Assists'] / df['xA']).fillna(0)
 
-df['90s played'] = df['Minutes played'] / 90
 
-df['Total progressive passes'] = df['Progressive passes per 90'] * df['90s played']
-df['Completed progressive passes'] = df['Total progressive passes'] * df['Accurate progressive passes, %'] / 100
-df['Progressive passes p90'] = df['Completed progressive passes'] / df['90s played']
+nineties = df['Minutes played'] / 90
+df['Total Interceptions'] = df['Interceptions per 90'] * nineties
+df['Possession'] = df ['Total Interceptions'] * 30 / df['PAdj Interceptions']
 
-df['Total passes to f3'] = df['Passes to final third per 90'] * df['90s played']
-df['Completed passes to f3'] = df['Total passes to f3'] * df['Accurate passes to final third, %'] / 100
-df['Passes to final third p90'] = df['Completed passes to f3'] / df['90s played']
+df['Successful def actions'] = df['Successful defensive actions per 90'] * nineties
+df['PAdj Successful def actions'] = df['Successful def actions'] * 30 / df['Possession']
 
-df['Total dribbles'] = df['Dribbles per 90'] * df['90s played']
-df['Successful dribbles'] = df['Total dribbles'] * df['Successful dribbles, %']
-df['Dribbles completed p90'] = df['Successful dribbles'] / df['90s played']
+# df['Total progressive passes'] = df['Progressive passes per 90'] * nineties
+# df['Completed progressive passes'] = df['Total progressive passes'] * df['Accurate progressive passes, %'] / 100
+# df['Progressive passes p90'] = df['Completed progressive passes'] / nineties
+
+# df['Total passes to f3'] = df['Passes to final third per 90'] * nineties
+# df['Completed passes to f3'] = df['Total passes to f3'] * df['Accurate passes to final third, %'] / 100
+# df['Passes to final third p90'] = df['Completed passes to f3'] / nineties
+
+# df['Total dribbles'] = df['Dribbles per 90'] * nineties
+# df['Successful dribbles'] = df['Total dribbles'] * df['Successful dribbles, %']
+# df['Dribbles completed p90'] = df['Successful dribbles'] / nineties
 
 attacking = ['Shots per 90', 'xG/Shot', 'Touches in box per 90']
 
 playmaking = [
     'Passes per 90', 'Accurate short / medium passes, %',
-    'Accurate long passes, %', 'Passes to final third p90',
-    'Progressive passes p90',
+    'Accurate long passes, %', 'Passes to final third per 90',
+    'Progressive passes per 90',
     'Shot assists per 90', 'xA per 90'
 ]
 
-ballhandling = ['Offensive duels won, %', 'Dribbles completed p90', 'Progressive runs per 90']
+ballhandling = ['Offensive duels won, %', 'Dribbles per 90', 'Progressive runs per 90']
 
 defensive = [
     'PAdj Sliding tackles', 'PAdj Interceptions', 
+    'PAdj Successful def actions',
     'Fouls per 90', 'Defensive duels won, %',
     'Aerial duels won, %'
 ]
@@ -125,7 +132,7 @@ params_2 = [
     'Progressive \npasses per 90',
     'Shot assists \nper 90', 'xA per 90','Offensive duels \nwon, %',
     'Dribbles \nper 90', 'Progressive \ncarries per 90',
-    'PAdj Tackles', 'PAdj \nInterceptions',
+    'PAdj Tackles', 'PAdj \nInterceptions', 'PAdj Successful\ndef actions',
     'Cautiousness', 'Defensive \nduels won %',
     'Aerial duels \nwon %'
 ]
