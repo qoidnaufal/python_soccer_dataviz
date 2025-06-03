@@ -18,7 +18,7 @@ competition = 'Liga 1'
 season = '2024-25'
 position_centerbacks = 'CB'
 
-player_name = 'T. Martić'
+player_name = 'João Vitor'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'

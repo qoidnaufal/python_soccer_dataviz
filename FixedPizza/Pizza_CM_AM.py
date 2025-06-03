@@ -12,7 +12,7 @@ season = '2024-25'
 
 # player_name = 'Zé Valente'
 # player_name = 'Éber Bessa'
-player_name = 'Gilson Costa'
+player_name = 'T. Firmansyah'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition_played} {season}')
 extension = 'xlsx'

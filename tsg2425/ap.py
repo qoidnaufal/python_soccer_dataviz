@@ -3,20 +3,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
-TOTAL_MINUTES = 11 * 90 * 34 / 100
+TOTAL_MINUTES = 11 * 90 * 34 * 18 / 100
+
+# ###################################################
+#
+#              ADJUSTED ACADEMY PRODUCT
+#
+# ###################################################
 
 df = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
 df['%'] = df['Adjusted Total Minutes'] / TOTAL_MINUTES
 df = df.sort_values(by=['Adjusted Total Minutes'], ascending=False)
 df = df.set_index('Club Name')
 
-print(df)
+# ###################################################
+#
+#           NON ADJUSTED ACADEMY PRODUCT
+#
+# ###################################################
 
-teams = df.index
+ap = pd.read_csv("./data/ap.csv")
+ap = ap.sort_values(by=['AP minutes'], ascending=False)
+ap = ap.set_index('Klub')
+
+teams = ap.index
 idx = np.arange(len(teams))
 
-minutes = df['Adjusted Total Minutes']
-max_minutes = df['Adjusted Total Minutes'].max()
+minutes = ap['AP minutes']
+max_minutes = ap['AP minutes'].max()
 percentage = df['%'].apply(lambda x: float('%.2f'%(x)))
 adjusted_p = df['%'].apply(lambda x: max_minutes * x / 100)
 

@@ -13,7 +13,6 @@ fig.text(
     ha="center", color="#000000"
 )
 
-
 total_minutes = 11 * 34 * 90 * 18
 
 # ###################################################
@@ -31,17 +30,30 @@ foreign_contribution = foreign_minutes / total_minutes
 
 # ###################################################
 #
-#                  ACADEMY PRODUCT
+#              ADJUSTED ACADEMY PRODUCT
 #
 # ###################################################
 
-ap = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
-ap = ap.sort_values(by=['Adjusted Total Minutes'], ascending=False)
-ap = ap.set_index('Club Name')
+adjusted_ap = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
+adjusted_ap = adjusted_ap.sort_values(by=['Adjusted Total Minutes'], ascending=False)
+adjusted_ap = adjusted_ap.set_index('Club Name')
 
-ap_minutes = ap['Adjusted Total Minutes'].sum()
-max_ap_minutes = ap['Adjusted Total Minutes'].max()
-ap_contribution = ap_minutes / total_minutes
+total_adjusted_ap_minutes = adjusted_ap['Adjusted Total Minutes'].sum()
+# adjusted_max_ap_minutes = adjusted_ap['Adjusted Total Minutes'].max()
+adjusted_ap_contribution = total_adjusted_ap_minutes / total_minutes
+
+# ###################################################
+#
+#           NON ADJUSTED ACADEMY PRODUCT
+#
+# ###################################################
+
+ap = pd.read_csv("./data/ap.csv")
+ap = ap.sort_values(by=['AP minutes'], ascending=False)
+ap = ap.set_index('Klub')
+
+total_ap_minutes = ap['AP minutes'].sum()
+max_ap_minutes = ap['AP minutes'].max()
 
 # ###################################################
 #
@@ -49,26 +61,37 @@ ap_contribution = ap_minutes / total_minutes
 #
 # ###################################################
 
-non_ap_players_minutes = total_minutes - foreign_minutes - ap_minutes
+non_ap_players_minutes = total_minutes - foreign_minutes - total_adjusted_ap_minutes
 non_ap_contribution = non_ap_players_minutes / total_minutes
 
-dist = [ap_contribution, foreign_contribution, non_ap_contribution]
+# ###################################################
+#
+#                  PLOTTING DATA
+#
+# ###################################################
+
+dist = [adjusted_ap_contribution, foreign_contribution, non_ap_contribution]
 labels = ["Academy Product", "Foreign", "Non Academy Product"]
 explode = [0.1, 0, 0]
 
 # prepare
 angle = -180 * dist[0]
 wedges, *_ = ax1.pie(dist, autopct='%1.1f%%', startangle=angle, labels=labels, explode=explode)
+wedges[0].set(color='#5CB338')
+wedges[1].set(color='#578FCA')
+wedges[2].set(color='#F79B72')
+
 bottom = 1
 width = 0.2
 
 # bar chart
-ap_params = ap['Adjusted Total Minutes'].apply(lambda x: x / ap_minutes).to_list()
+# ap_params = adjusted_ap['Adjusted Total Minutes'].apply(lambda x: x / total_adjusted_ap_minutes).to_list()
+ap_params = ap['AP minutes'].apply(lambda x: x / total_ap_minutes).to_list()
 ap_labels = ap.index.to_list()
-print(ap_labels)
+# print(ap_labels)
 
 colors = {
-    "Persija Jakarta": "orange",
+    "Persija Jakarta": "#DF2C20",
     "Persib Bandung": "blue",
     "Persebaya Surabaya": "green",
     "Barito Putera": "yellow",
@@ -81,7 +104,7 @@ colors = {
     "Borneo FC": "red",
     "Semen Padang": "red",
     "Arema FC": "blue",
-    "Dewa United": "gold",
+    "Dewa United": "#FAC60D",
     "Madura United": "red",
     "Persik Kediri": "purple",
     "PSBS Biak": "blue",
@@ -92,8 +115,8 @@ colors = {
 for j, (height, label) in enumerate([*zip(ap_params, ap_labels)]):
     bottom -= height
     bc = ax2.bar(0, height, width, bottom=bottom, color=colors.get(label), label=label,
-                 alpha=max([height*ap_minutes/(max_ap_minutes), 0.3]))
-    value = ap.loc[label, 'Adjusted Total Minutes']
+                 alpha=max([height*total_ap_minutes/(max_ap_minutes), 0.5-(j/100)]))
+    value = ap.loc[label, 'AP minutes']
     ax2.bar_label(bc, labels=[value], label_type='center')
 
 ax2.set_title('Minutes Contribution')
