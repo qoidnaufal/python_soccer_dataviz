@@ -3,47 +3,78 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 
-df = pd.read_csv("~/Documents/LearnPython/tsg2425/data/youth_liga1.csv")
+TOTAL_MINUTES = 11 * 34 * 90
+
+df_youth = pd.read_csv("~/Documents/LearnPython/tsg2425/data/youth.csv")
+df_youth = df_youth.sort_values(by=['Total Minutes'], ascending=False)
 
 # ###################################################
 #
-#                       CLUBS
+#                     All Youth
 #
 # ###################################################
 
-liga1 = df.loc[
-    df['Competition'].str.contains('BRI Liga 1')
-]['Youth Club'].drop_duplicates().to_list()
-liga1.append('Malut United')
+df_all = pd.read_csv("~/Documents/LearnPython/tsg2425/data/all_youth_minutes.csv")
 
 # ###################################################
 #
-#                     CLUB Now
+#                      >= 900
 #
 # ###################################################
 
-club_now = df['Club now'].drop_duplicates().to_list()
-club_now.append('Malut United')
+df_900 = pd.read_csv("~/Documents/LearnPython/tsg2425/data/nine_hundred_players.csv")
+df_900 = df_900.sort_values(by=['Minutes'], ascending=False)
 
 # ###################################################
 #
-#                     Players
+#                       Youth
 #
 # ###################################################
 
-players = df['Name'].to_list()
-data = {}
+teams = df_youth['Team']
+idx = np.arange(len(teams))
+minutes = df_youth['Total Minutes']
+total_players = df_youth['Players with Minutes']
+ratio = minutes / total_players
 
-for i in range(len(players)):
-    dict = {}
-    row = df.loc[df['Name'].str.contains(players[i])]
-    # data.update({'Name': players[i]})
-    dict.update({'Club now': row['Club now'].values[0]}) 
-    dict.update({'Pos': row['Pos'].values[0]})
-    dict.update({'DOB': row['DOB'].values[0]})
-    dict.update({'Minutes': row['Minutes'].values[0]})
-    dict.update({'Games': row['Games'].values[0]})
-    dict.update({'Youth Club': row['Youth Club'].values[0]})
-    data.update(f"{players[i]}": dict)
+max_minutes = minutes.max()
+max_num = total_players.max()
 
-print(data)
+# ###################################################
+#
+#                       Label
+#
+# ###################################################
+
+p_label = total_players.to_list()
+total_players = total_players.apply(lambda x: x * max_minutes / max_num / 2)
+
+ratio = ratio.apply(lambda x: int(x))
+
+# ###################################################
+#
+#                       Plot
+#
+# ###################################################
+
+fig, ax = plt.subplots(figsize=(8, 9), layout='constrained')
+width = 0.3
+
+m_rect = ax.barh(idx-width/2, minutes, width, color="green")
+ax.bar_label(m_rect, padding=3)
+
+p_rect = ax.barh(idx+width/2, total_players, width, color="orange")
+ax.bar_label(p_rect, labels=p_label, padding=3)
+
+ax.plot(ratio, idx, color='blue', marker='o', linestyle='dashed')
+# ax.label(r_line, labels=r_label, padding=3)
+
+ax.set_yticks(idx, teams)
+ax.invert_yaxis()
+ax.set_xlim(0, max_minutes + max_minutes * 10 / 100)
+
+ax.legend(["Average minutes per U22 player", "U22 players total minutes", "U22 players with minutes"])
+title = ax.set_title("U22 Players Minutes Contribution\nBRI Liga 1 2024/25")
+title.set(fontsize='xx-large', fontweight='bold')
+
+plt.show()

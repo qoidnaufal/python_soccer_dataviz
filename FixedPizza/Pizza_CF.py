@@ -13,13 +13,13 @@ import scipy.stats as stats
 from mplsoccer import PyPizza
 
 minutes_played = 900
-season = '2024-25'
-competition_played = 'Liga 1'
+season = '2022'
+competition_played = 'Malaysian Super League'
 position_filter_1 = 'CF'
 # max_age = 30
 # minimum_height = 183
 
-player_name = 'Léo Gaúcho'
+player_name = 'M. Leandro'
 
 # load in the data
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition_played} {season}')
@@ -53,10 +53,10 @@ df['Longpass received ratio'] = df['Received long passes per 90'] / (df['Receive
 
 # minute & position filter
 
-df = df.loc[(df['Position'].str.contains(position_filter_1)) &
-              (df['Minutes played']>=minutes_played)
-#              & (df["Height"]>=minimum_height)
-              ]
+df = df.loc[
+    (df['Position'].str.contains(position_filter_1))
+    & (df['Minutes played']>=minutes_played)
+]
 
 goalscoring = [
     'xG per 90', 'xG/Shot', 'Shots per 90',

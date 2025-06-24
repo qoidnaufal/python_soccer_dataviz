@@ -11,7 +11,7 @@ competition_played = 'Liga 1'
 season = '2024-25'
 
 # player_name = 'Zé Valente'
-player_name = 'M. Risaldi'
+player_name = 'Y.  Yafi'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition_played} {season}')
 extension = 'xlsx'
@@ -188,7 +188,7 @@ fig.text(
 
 
 # add credits
-TEXT_1 = "Template for AM & WG"
+TEXT_1 = "Template for WG & AM"
 CREDIT_1 = "Data: Wyscout"
 CREDIT_2 = "Qoid Naufal"
 

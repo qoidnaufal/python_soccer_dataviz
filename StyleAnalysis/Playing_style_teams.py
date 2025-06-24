@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import math
 
 competition = 'Liga 1'
-year = '2022-23'
+year = '2024-25'
 
 x_value = 'PPDA'
 y_value = 'Average passes per possession'
@@ -198,7 +198,7 @@ points = ax.scatter(x, y, c=c, s=150, cmap="summer_r")
 ax.invert_xaxis()
 #ax.invert_yaxis()
 
-plt.suptitle(suptitle_string, x=0.433, y=0.95, fontsize=25)
+plt.suptitle(suptitle_string, x=0.433, y=0.97, fontsize=25)
 plt.title(title_string, x=0.484, fontsize=14)
 
 #ax.set_title(title_string, size="22")
@@ -221,11 +221,12 @@ plt.plot([x_min,x_max],[y.mean(),y.mean()],'k-', linestyle = ":", lw=1)
 fig.colorbar(points, shrink=0.35, label=c_value)
 
 # add credits
-CREDIT_1 = "Dot size = %s" % (s_value)
+# CREDIT_1 = "Dot size = %s" % (s_value)
+CREDIT_2 = "Data from Wyscout"
 CREDIT_3 = "@novalaziz"
 
 fig.text(
-    0.85, 0.07, f"{CREDIT_3}", size=10,
+    0.85, 0.07, f"{CREDIT_2}\n{CREDIT_3}", size=10,
     color="#000000",
     ha="right"
 )

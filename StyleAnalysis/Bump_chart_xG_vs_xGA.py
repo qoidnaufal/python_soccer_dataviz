@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 competition = "Liga 1"
-season = "2022-23"
+season = "2024-25"
 
-team_name = 'Persebaya Surabaya'
+team_name = 'Dewa United'
 rolling_average = 4
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Team data/{competition} {season}')
@@ -148,13 +148,13 @@ df_team['xG_rolling'] = df_team.xG.rolling(rolling_average).mean()
 df_team['xGA_rolling'] = df_team.xGA.rolling(rolling_average).mean()
 
 # data to plot
-x = df_team['Date']
-y1 = df_team['xG_rolling']
-y2 = df_team['xGA_rolling']
+# x = df_team['Date']
+# y1 = df_team['xG_rolling']
+# y2 = df_team['xGA_rolling']
 
-x = np.array(x)
-y1 = np.array(y1)
-y2 = np.array(y2)
+x = np.array(df_team['Date'])
+y1 = np.array(df_team['xG_rolling'])
+y2 = np.array(df_team['xGA_rolling'])
 
 # set the canvas
 fig, ax = plt.subplots(figsize = (20,8), facecolor='black')
@@ -169,7 +169,7 @@ ax.tick_params(axis='y', colors='white')
 plt.plot(x, y1, color = 'blue', linewidth=3)
 plt.plot(x, y2, color = 'red', linewidth=3)
 
-ax.fill_between(x, y1, y2, where=y1>y2, facecolor='blue', alpha=0.6, interpolate=True)
+ax.fill_between(x, y1, y2, where=y1>=y2, facecolor='blue', alpha=0.6, interpolate=True)
 ax.fill_between(x, y1, y2, where=y1<y2, facecolor='red', alpha=0.6, interpolate=True)
 
 plt.xticks(rotation = 'vertical')

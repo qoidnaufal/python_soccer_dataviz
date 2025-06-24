@@ -13,14 +13,14 @@ import scipy.stats as stats
 import numpy as np
 from mplsoccer import PyPizza
 
-minimum_minutes = 900
+minimum_minutes = 800
 competition = 'Liga 1'
 season = '2024-25'
 position_filter_1 = 'RB'
 position_filter_2 = 'LB'
 position_filter_3 = 'WB'
 
-player_name = 'F. Uopmabin'
+player_name = 'S. Alfarid'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'

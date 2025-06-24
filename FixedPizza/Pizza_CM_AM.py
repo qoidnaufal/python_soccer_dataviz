@@ -6,13 +6,13 @@ import scipy.stats as stats
 import numpy as np
 from mplsoccer import PyPizza
 
-minimum_minutes = 900
+minimum_minutes = 770
 competition_played = 'Liga 1'
 season = '2024-25'
 
 # player_name = 'Zé Valente'
 # player_name = 'Éber Bessa'
-player_name = 'T. Firmansyah'
+player_name = 'F.  Sudin'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition_played} {season}')
 extension = 'xlsx'
@@ -25,41 +25,46 @@ df = pd.concat([pd.read_excel(f) for f in all_filenames]).drop_duplicates()
 #position_list = df['Position'].tolist()
 
 # parameters adjusment
-df['Goals/xG ratio'] = (df['Goals'] / df['xG']).fillna(0)
+nineties = df['Minutes played'] / 90
 df['xG/Shot'] = (df['xG']/df['Shots']).fillna(0)
 df['Verticality'] = df['Forward passes per 90']/(df['Forward passes per 90'] +
                                                  df['Lateral passes per 90'] +
                                                  df['Back passes per 90'])
 
-df['Assists/xA ratio'] = (df['Assists'] / df['xA']).fillna(0)
-
-df['90s played'] = df['Minutes played'] / 90
-
-df['Total progressive passes'] = df['Progressive passes per 90'] * df['90s played']
+df['Total progressive passes'] = df['Progressive passes per 90'] * nineties
 df['Completed progressive passes'] = df['Total progressive passes'] * df['Accurate progressive passes, %'] / 100
-df['Progressive passes p90'] = df['Completed progressive passes'] / df['90s played']
+df['Progressive passes p90'] = df['Completed progressive passes'] / nineties
 
-df['Total passes to f3'] = df['Passes to final third per 90'] * df['90s played']
+df['Total passes to f3'] = df['Passes to final third per 90'] * nineties
 df['Completed passes to f3'] = df['Total passes to f3'] * df['Accurate passes to final third, %'] / 100
-df['Passes to final third p90'] = df['Completed passes to f3'] / df['90s played']
+df['Passes to final third p90'] = df['Completed passes to f3'] / nineties
 
-df['Total dribbles'] = df['Dribbles per 90'] * df['90s played']
+df['Total dribbles'] = df['Dribbles per 90'] * nineties
 df['Successful dribbles'] = df['Total dribbles'] * df['Successful dribbles, %']
-df['Dribbles completed p90'] = df['Successful dribbles'] / df['90s played']
+df['Dribbles completed p90'] = df['Successful dribbles'] / nineties
+
+df['Total Interceptions'] = df['Interceptions per 90'] * nineties
+df['Possession'] = df ['Total Interceptions'] * 30 / df['PAdj Interceptions']
+
+df['Successful def actions'] = df['Successful defensive actions per 90'] * nineties
+df['PAdj Successful def actions'] = df['Successful def actions'] * 30 / df['Possession']
 
 attacking_params = [
     'xG per 90', 'xG/Shot', 'Shots per 90', 'Shots on target, %', 'Touches in box per 90'
 ]
 playmaking_params = [
+    'Received passes per 90', 'Passes per 90',
+    'Accurate short / medium passes, %', 'Accurate long passes, %',
     'Smart passes per 90', 'Progressive passes p90', 'Deep completions per 90',
-    'Shot assists per 90', 'xA per 90', 'Deep completed crosses per 90'
+    'Shot assists per 90', 'xA per 90'
 ]
 ball_carrying_params = [
     'Offensive duels won, %', 'Dribbles per 90', 'Successful dribbles, %',
     'Progressive runs per 90', 'Fouls suffered per 90',
 ]
 defensive_params = [
-    'PAdj Sliding tackles', 'PAdj Interceptions',  'Fouls per 90'
+    'PAdj Sliding tackles', 'PAdj Interceptions', 'PAdj Successful def actions',
+    'Defensive duels won, %', 'Fouls per 90'
 ]
 
 parameters = []
@@ -75,10 +80,12 @@ position_cm = 'CM'
 df_1 = df.loc[
     (df['Position'].str.contains(position_attackingmid))
     & (df['Minutes played']>=minimum_minutes)
+    # & (df['Position'].str.contains('W')==False)
 ]
 df_2 = df.loc[
     (df['Position'].str.contains(position_cm)
-     & (df['Minutes played']>=minimum_minutes)
+    & (df['Minutes played']>=minimum_minutes)
+    # & (df['Position'].str.contains('W')==False)
 )]
 
 df_mf = pd.concat([df_1, df_2]).drop_duplicates()
@@ -87,6 +94,8 @@ df_mf = pd.concat([df_1, df_2]).drop_duplicates()
 df_mf = df_mf.set_index('Player')
 idx_list = list(df_mf.index)
 print(idx_list)
+
+# print(df_mf.loc[player_name])
 
 player_minute = df_mf.loc[player_name, 'Minutes played']
 player_club = df_mf.loc[player_name, 'Team within selected timeframe']
@@ -113,13 +122,15 @@ values = [round(elem, 1) for elem in values]
 # give better spacing
 params_2 = [
     'xG per 90', 'xG/Shot', 'Shots per 90', 'Shots on \ntarget %', 'Touches in box \nper 90',
+    'Received passes \nper 90', 'Passes per 90',
+    'Accurate short / \nmedium passes %', 'Accurate \nlong passes %',
     'Smart passes \nper 90', 'Progressive \npasses per 90', 'Deep completions \nper 90',
-    'Shot assists \nper 90', 'xA per 90', 'Deep completed \ncrosses per 90',
+    'Shot assists \nper 90', 'xA per 90',
     'Offensive duels \nwon, %', 'Fouls suffered \nper 90',
     'Dribbles \nper 90', 'Successful \ndribbles %', 'Progressive \ncarries per 90',
-    'PAdj Tackles', 'PAdj \nInterceptions',
-    'Cautiousness'
-    ]
+    'PAdj Tackles', 'PAdj \nInterceptions', 'PAdj Successful\ndef actions',
+    'Cautiousness', 'Defensive \nduels won %'
+]
 
 # color for the slices and text
 len_a = len(attacking_params)
@@ -155,7 +166,7 @@ fig, ax = baker.make_pizza(
         zorder=2, linewidth=1
     ),                   # values to be used when plotting slices
     kwargs_params=dict(
-        color="#000000", fontsize=10,
+        color="#000000", fontsize=8,
         va="center",
     ),                   # values to be used when adding parameter
     kwargs_values=dict(

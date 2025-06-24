@@ -1,8 +1,8 @@
 use std::{collections::{HashMap, HashSet}, fs::File, io::Write};
-
 use serde::{Serialize, Deserialize};
 
 const DATA: &str = include_str!("../../data/youth_liga1.csv");
+const YOUTH_DATA: &str = include_str!("../../data/mop.csv");
 
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 enum ClubName {
@@ -49,23 +49,26 @@ impl From<String> for ClubName {
         match value.as_str() {
             "PSIS Semarang" => Self::PSISSemarang,
             "PSS Sleman" => Self::PSSSleman,
-            "Persib Bandung" => Self::PersibBandung,
-            "Barito Putera" => Self::BaritoPutera,
-            "Persik Kediri" => Self::PersikKediri,
-            "Dewa United" => Self::DewaUnited,
-            "Persebaya Surabaya" => Self::PersebayaSurabaya,
-            "Persija Jakarta" => Self::PersijaJakarta,
-            "Arema" => Self::Arema,
+            "PERSIB Bandung" => Self::PersibBandung,
+            "PS Barito Putera" => Self::BaritoPutera,
+            "PERSIK Kediri" => Self::PersikKediri,
+            "Dewa United FC" => Self::DewaUnited,
+            "PERSEBAYA Surabaya" => Self::PersebayaSurabaya,
+            "PERSIJA Jakarta" => Self::PersijaJakarta,
+            "AREMA FC" => Self::Arema,
             "PSM Makassar" => Self::PSMMakassar,
-            "Bali United" => Self::BaliUnited,
-            "Persita Tangerang" => Self::PersitaTangerang,
-            "Borneo FC" => Self::BorneoFC,
-            "Semen Padang" => Self::SemenPadang,
-            "Madura United" => Self::MaduraUnited,
+            "Bali United FC" => Self::BaliUnited,
+            "PERSITA Tangerang" => Self::PersitaTangerang,
+            "Borneo FC Samarinda" => Self::BorneoFC,
+            "Semen Padang FC" => Self::SemenPadang,
+            "Madura United FC" => Self::MaduraUnited,
             "PSBS Biak" => Self::PSBSBiak,
-            "Persis Solo" => Self::PersisSolo,
-            "Malut United" => Self::MalutUnited,
-            _ => unreachable!()
+            "PERSIS Solo" => Self::PersisSolo,
+            "Malut United FC" => Self::MalutUnited,
+            n => {
+                eprintln!("unrecognized club: {n}");
+                unreachable!()
+            }
         }
     }
 }
@@ -141,7 +144,7 @@ struct Row {
 }
 
 #[derive(Debug)]
-struct Data {
+struct ApData {
     club_now: String,
     dob: String,
     pos: Position,
@@ -187,9 +190,9 @@ struct YouthClub {
     players: Vec<Player>,
 }
 
-fn get_data<F>(player_data: HashMap<String, Data>, f: F) -> HashMap<ClubName, YouthClub>
+fn get_ap_data<F>(player_data: HashMap<String, ApData>, f: F) -> HashMap<ClubName, YouthClub>
 where
-    F: FnMut(&(&String, &Data)) -> bool,
+    F: FnMut(&(&String, &ApData)) -> bool,
 {
     let mut youth_clubs: HashMap<ClubName, YouthClub> = HashMap::new();
     youth_clubs.insert(ClubName::MalutUnited, YouthClub {
@@ -259,11 +262,10 @@ where
     youth_clubs
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn academy_product() -> Result<(), Box<dyn std::error::Error>> {
     let mut df = csv::Reader::from_reader(DATA.as_bytes());
     let mut iter = df.deserialize();
-
-    let mut player_data: HashMap<String, Data> = HashMap::new();
+    let mut player_data: HashMap<String, ApData> = HashMap::new();
 
     while let Some(record) = iter.next() {
         let row: Row = record?;
@@ -271,7 +273,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .and_modify(|data| {
                 data.youth_club.insert(row.youth_club);
             })
-            .or_insert(Data {
+            .or_insert(ApData {
                 club_now: row.club_now,
                 dob: row.dob,
                 pos: row.pos,
@@ -286,29 +288,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
     }
 
-    let youth_clubs = get_data(player_data, |(_, data)| {
+    let youth_clubs = get_ap_data(player_data, |(_, data)| {
         data.competition == Competition::BRILiga1 || data.competition == Competition::PegadaianLiga2
     });
-
-    // assert_eq!(youth_clubs.len(), 18);
-    // eprintln!("{player_data:#?}");
-
-    // eprintln!("{youth_data:#?}");
-    // eprintln!("{:#?}", youth_data.get(&ClubName::Arema).unwrap());
-
-    // let club = youth_clubs.get(&ClubName::DewaUnited).unwrap();
-    // let club_minutes = club.minutes;
-    // let players_count = club.players.len();
-
-    // let mut player_minutes = 0f32;
-    // let mut amount = 0u8;
-    // club.players.iter().for_each(|p| {
-    //     player_minutes += p.minutes;
-    //     amount += p.youth_clubs;
-    // });
-
-    // eprintln!("club minutes: {club_minutes}, player minutes: {player_minutes}");
-    // eprintln!("players count: {players_count}, amount of youth clubs: {amount}");
 
     let mut writer = csv::Writer::from_writer(vec![]);
     youth_clubs.iter().try_for_each(|(_, data)| {
@@ -319,8 +301,149 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let data = String::from_utf8(writer.into_inner()?)?;
     // eprintln!("{data}");
 
-    let mut file = File::create("../data/adjusted_data_all.csv")?;
+    let mut file = File::create("../data/data.csv")?;
     file.write_all(data.as_bytes())?;
+
+    Ok(())
+}
+
+#[derive(Debug, Serialize)]
+struct YouthMinutes {
+    #[serde(rename(serialize = "Team"))]
+    club_name: ClubName,
+    #[serde(rename(serialize = "Players with Minutes"))]
+    players_with_minutes: usize,
+    #[serde(rename(serialize = "Total Minutes"))]
+    total_minutes: u32,
+    #[serde(rename(serialize = ">= 900"))]
+    nine_hundred: u8,
+}
+
+#[derive(Debug, Deserialize)]
+struct MoP {
+    #[serde(rename(deserialize = "Name"))]
+    name: String,
+    #[serde(rename(deserialize = "Team"))]
+    team: String,
+    #[serde(rename(deserialize = "MoP"))]
+    minutes: u32,
+    #[serde(rename(deserialize = "Age"))]
+    age: u8,
+    #[serde(rename(deserialize = "Nationality"))]
+    nationality: String,
+}
+
+#[derive(Debug, Serialize)]
+struct AllYouthMinutes {
+    #[serde(rename(serialize = "Name"))]
+    name: String,
+    #[serde(rename(serialize = "Team"))]
+    team: ClubName,
+    #[serde(rename(serialize = "MoP"))]
+    minutes: u32,
+}
+
+#[derive(Debug, Serialize)]
+struct NineHundred {
+    #[serde(rename(serialize = "Name"))]
+    name: String,
+    #[serde(rename(serialize = "Team"))]
+    club_name: ClubName,
+    #[serde(rename(serialize = "Minutes"))]
+    minutes: u32,
+}
+
+fn youth_contribution() -> Result<(), Box<dyn std::error::Error>> {
+    let mut df = csv::Reader::from_reader(YOUTH_DATA.as_bytes());
+    let mut iter = df.deserialize();
+    let mut club_data: HashMap<ClubName, YouthMinutes> = HashMap::new();
+    let mut nine_hundred_players = vec![];
+    let mut all_youth_minutes = vec![];
+
+    while let Some(record) = iter.next() {
+        let row: MoP = record?;
+        let club_name: ClubName = row.team.into();
+        if row.nationality == "Indonesia" && row.age <= 22 {
+            all_youth_minutes.push(AllYouthMinutes {
+                name: row.name.clone(),
+                team: club_name,
+                minutes: row.minutes,
+            });
+            if row.minutes >= 900 {
+                nine_hundred_players.push(NineHundred {
+                    name: row.name.clone(),
+                    club_name,
+                    minutes: row.minutes,
+                });
+            }
+            club_data.entry(club_name)
+                .and_modify(|youth| {
+                    if row.minutes > 0 {
+                        youth.players_with_minutes += 1
+                    }
+                    if row.minutes >= 900 {
+                        youth.nine_hundred += 1;
+                    }
+                    youth.total_minutes += row.minutes;
+                })
+                .or_insert(YouthMinutes {
+                    club_name,
+                    players_with_minutes: {
+                        if row.minutes > 0 { 1 } else { 0 }
+                    },
+                    total_minutes: row.minutes,
+                    nine_hundred: {
+                        if row.minutes >= 900 { 1 } else { 0 }
+                    },
+                });
+        }
+        {
+            let mut writer = csv::Writer::from_writer(vec![]);
+            club_data.iter().try_for_each(|(_, data)| {
+                writer.serialize(data)?;
+
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
+
+            let data = String::from_utf8(writer.into_inner()?)?;
+            let mut file = File::create("../data/youth.csv")?;
+            file.write_all(data.as_bytes())?;
+        }
+
+        {
+            let mut writer = csv::Writer::from_writer(vec![]);
+            nine_hundred_players.iter().try_for_each(|player| {
+                writer.serialize(player)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
+
+            let data = String::from_utf8(writer.into_inner()?)?;
+            let mut file = File::create("../data/nine_hundred_players.csv")?;
+            file.write_all(data.as_bytes())?;
+        }
+
+        {
+            let mut writer = csv::Writer::from_writer(vec![]);
+            all_youth_minutes.iter().try_for_each(|data| {
+                writer.serialize(data)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
+
+            let data = String::from_utf8(writer.into_inner()?)?;
+            let mut file = File::create("../data/all_youth_minutes.csv")?;
+            file.write_all(data.as_bytes())?;
+        }
+    }
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = std::env::args();
+
+    match args.nth(1) {
+        Some(arg) if arg == "ap" => academy_product()?,
+        _ => youth_contribution()?,
+    }
 
     Ok(())
 }

@@ -19,7 +19,7 @@ season = '2024-25'
 position_1 = 'CM'
 position_2 = 'DM'
 
-player_name = 'T. Firmansyah'
+player_name = 'H. Sjahbandi'
 
 os.chdir(f'/Users/qoidnaufal/Documents/Wyscout/Player data/{competition} {season}')
 extension = 'xlsx'
@@ -63,19 +63,17 @@ df['PAdj Successful def actions'] = df['Successful def actions'] * 30 / df['Poss
 attacking = ['Shots per 90', 'xG/Shot', 'Touches in box per 90']
 
 playmaking = [
-    'Passes per 90', 'Accurate short / medium passes, %',
-    'Accurate long passes, %', 'Passes to final third per 90',
-    'Progressive passes per 90',
+    'Received passes per 90', 'Passes per 90',
+    'Accurate short / medium passes, %', 'Accurate long passes, %',
+    'Smart passes per 90', 'Passes to final third per 90', 'Progressive passes per 90',
     'Shot assists per 90', 'xA per 90'
 ]
 
 ballhandling = ['Offensive duels won, %', 'Dribbles per 90', 'Progressive runs per 90']
 
 defensive = [
-    'PAdj Sliding tackles', 'PAdj Interceptions', 
-    'PAdj Successful def actions',
-    'Fouls per 90', 'Defensive duels won, %',
-    'Aerial duels won, %'
+    'PAdj Sliding tackles', 'PAdj Interceptions',  'PAdj Successful def actions',
+    'Fouls per 90', 'Defensive duels won, %', 'Aerial duels won, %'
 ]
 
 parameters = []
@@ -88,12 +86,12 @@ parameters.extend(defensive)
 df_1 = df.loc[
     (df['Position'].str.contains(position_1))
     & (df['Minutes played']>=minimum_minutes)
-    & (df['Position'].str.contains('AMF') == False)
+    & (df['Position'].str.contains('W') == False)
 ]
 df_2 = df.loc[
     (df['Position'].str.contains(position_2)
     & (df['Minutes played']>=minimum_minutes))
-    & (df['Position'].str.contains('AMF') == False)
+    & (df['Position'].str.contains('W') == False)
 ]
 df_mf = pd.concat([df_1,df_2]).drop_duplicates()
 
@@ -127,14 +125,13 @@ values = [round(elem, 1) for elem in values]
 # give better spacing
 params_2 = [
     'Shots per 90', 'xG/Shot', 'Touches in \nbox per 90',
-    'Passes per 90', 'Accurate short / \nmedium passes %',
-    'Accurate \nlong passes %', 'Passes to final \nthird per 90',
-    'Progressive \npasses per 90',
+    'Received \npasses per 90', 'Passes per 90',
+    'Accurate short / \nmedium passes %', 'Accurate \nlong passes %',
+    'Smart passes \nper 90', 'Passes to final \nthird per 90', 'Progressive \npasses per 90',
     'Shot assists \nper 90', 'xA per 90','Offensive duels \nwon, %',
     'Dribbles \nper 90', 'Progressive \ncarries per 90',
     'PAdj Tackles', 'PAdj \nInterceptions', 'PAdj Successful\ndef actions',
-    'Cautiousness', 'Defensive \nduels won %',
-    'Aerial duels \nwon %'
+    'Cautiousness', 'Defensive \nduels won %', 'Aerial duels \nwon %'
 ]
 
 # color for the slices and text
@@ -170,7 +167,7 @@ fig, ax = baker.make_pizza(
         zorder=2, linewidth=1
     ),                   # values to be used when plotting slices
     kwargs_params=dict(
-        color="#000000", fontsize=10,
+        color="#000000", fontsize=8,
         va="center",
     ),                   # values to be used when adding parameter
     kwargs_values=dict(
