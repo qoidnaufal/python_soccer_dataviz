@@ -21,8 +21,62 @@ GW,Tim Home,Tim Away,Total Match,Time Home,Time Away
 3,Arema FC,Bhayangkara Presisi Lampung FC,0:39:19,0:21:52,0:17:27
 3,Dewa United Banten FC,PERSIK Kediri,0:51:09,0:26:16,0:24:53
 3,PERSIJA,Malut United FC,0:47:02,0:27:52,0:19:10
-3,PSBS Biak,PERSIS,0:43:27,0:19:26,0:24:01
+3,PSBS Biak,PERSIS,0:40:32,0:22:52,0:17:40
 3,PERSEBAYA Surabaya,Bali United FC,0:43:40,0:16:26,0:27:14
 3,Borneo FC Samarinda,PERSIJAP,0:43:03,0:25:20,0:17:43
 3,PSIM Yogyakarta,PERSIB,0:42:53,0:21:51,0:21:02
 3,Madura United FC,PERSITA,0:45:56,0:28:01,0:17:55
+4,Bhayangkara Presisi Lampung FC,PERSIS,0:40:56,0:15:56,0:25:00
+4,Bali United FC,Madura United FC,0:38:31,0:14:38,0:23:53
+4,Dewa United Banten FC,PERSIJA,0:43:44,0:26:10,0:17:34
+4,PERSIJAP,Arema FC,0:41:44,0:21:12,0:20:32
+4,PSBS Biak,PERSIK Kediri,0:40:32,0:22:52,0:17:40
+4,Malut United FC,PSIM Yogyakarta,0:46:27,0:22:39,0:23:48
+4,PSM Makassar,PERSEBAYA Surabaya,0:00:00,0:00:00,0:00:00
+4,PERSIB,Borneo FC Samarinda,0:00:00,0:00:00,0:00:00
+4,PERSITA,Semen Padang FC,0:48:25,0:28:14,0:20:11
+5,Semen Padang FC,PSBS Biak,0:52:25,0:30:53,0:21:32
+5,PERSITA,PSM Makassar,0:42:36,0:13:56,0:28:40
+5,PERSIB,PERSEBAYA Surabaya,0:49:40,0:27:04,0:22:36
+5,PERSIK Kediri,Malut United FC,0:40:23,0:16:34,0:23:49
+5,Arema FC,Dewa United Banten FC,0:49:55,0:22:09,0:27:46
+5,Madura United FC,Bhayangkara Presisi Lampung FC,0:44:58,0:27:05,0:17:53
+5,PERSIS,PERSIJAP,0:44:41,0:21:41,0:23:00
+5,PSIM Yogyakarta,Borneo FC Samarinda,0:55:29,0:37:59,0:17:30
+5,PERSIJA,Bali United FC,0:39:07,0:23:10,0:15:57
+6,Bhayangkara Presisi Lampung FC,PERSIK Kediri,0:38:43,0:21:23,0:17:20
+6,Malut United FC,Madura United FC,0:50:53,0:29:28,0:21:25
+6,PERSEBAYA Surabaya,Semen Padang FC,0:42:23,0:24:21,0:18:02
+6,Dewa United Banten FC,PSBS Biak,0:49:16,0:25:23,0:23:53
+6,Bali United FC,PSIM Yogyakarta,0:44:34,0:21:39,0:22:55
+6,PSM Makassar,PERSIJA,0:38:32,0:25:51,0:12:41
+6,Arema FC,PERSIB,0:43:23,0:21:54,0:21:29
+6,PERSIJAP,PERSITA,0:35:45,0:24:43,0:11:02
+6,Borneo FC Samarinda,PERSIS,0:44:04,0:26:51,0:17:13
+7,PSBS Biak,Madura United FC,0:41:25,0:17:41,0:23:44
+7,Semen Padang FC,Bali United FC,0:51:01,0:30:19,0:20:42
+7,Bhayangkara Presisi Lampung FC,Malut United FC,0:49:58,0:30:33,0:19:25
+7,Dewa United Banten FC,PERSEBAYA Surabaya,0:57:21,0:41:04,0:16:17
+7,PERSITA,PERSIB,0:44:00,0:18:03,0:25:57
+7,PERSIJAP,PERSIK Kediri,0:43:09,0:22:29,0:20:40
+7,PSM Makassar,PSIM Yogyakarta,0:47:20,0:15:19,0:32:01
+7,Borneo FC Samarinda,PERSIJA,0:51:20,0:19:14,0:32:06
+7,PERSIS,Arema FC,0:46:19,0:19:36,0:26:43
+9,Dewa United Banten FC,Madura United FC,0:51:18,0:32:16,0:19:02
+9,PERSITA,PSIM Yogyakarta,0:51:25,0:17:15,0:34:10
+9,PSBS Biak,PERSIB,0:52:21,0:20:33,0:31:48
+9,Borneo FC Samarinda,PERSIK Kediri,0:49:41,0:25:23,0:24:18
+9,PERSEBAYA Surabaya,PERSIJA,0:39:50,0:16:53,0:22:57
+9,PSM Makassar,Arema FC,0:47:51,0:25:30,0:22:21
+9,PERSIJAP,Bali United FC,0:39:01,0:19:24,0:19:37
+9,Semen Padang FC,Bhayangkara Presisi Lampung FC,0:42:15,0:23:03,0:19:12
+9,PERSIS,Malut United FC,0:46:33,0:23:53,0:22:40
+10,PSIM Yogyakarta,Dewa United Banten FC,0:52:28,0:31:44,0:20:44
+10,PSBS Biak,PERSEBAYA Surabaya,0:42:23,0:28:01,0:14:22
+10,Madura United FC,PERSIJA,0:49:52,0:22:48,0:27:04
+10,PERSIK Kediri,PSM Makassar,0:38:59,0:20:22,0:18:37
+10,Bali United FC,PERSITA,0:48:42,0:26:28,0:22:14
+10,Arema FC,Borneo FC Samarinda,0:43:54,0:18:06,0:25:48
+10,Malut United FC,Semen Padang FC,0:46:15,0:32:13,0:14:02
+10,Bhayangkara Presisi Lampung FC,PERSIJAP,0:41:49,0:17:38,0:24:11
+10,PERSIB,PERSIS,0:49:25,0:19:36,0:29:49
