@@ -82,14 +82,9 @@ df = df.rename(columns={"Act Name": "Player"})
 
 for idx, game in enumerate(df["Match"]):
     teams = game.split("vs")
-    teams = [x.strip() for x in teams]
+    home, away = [x.strip() for x in teams]
 
-    opponent = ""
-
-    if df.at[idx, "Team"] == teams[0]:
-        opponent = teams[1]
-    else:
-        opponent = teams[0]
+    opponent = away if df.at[idx, "Team"] == home else home
 
     df.at[idx, "Opponent"] = opponent
 
@@ -188,19 +183,29 @@ def findClosest(centroids, data, count: int):
     closest = [data[idx] for idx in indices]
     return closest
 
-def plotDistributed(passes: pd.DataFrame, k, n_col, n_row):
-    filter = ["X1", "Y1", "xT"]
-    median = np.median(passes.loc[passes["prog_percent"] >= 0]["prog_percent"])
-    data = passes.loc[passes["prog_percent"] > median]
-    data = data.loc[data["Action"] == PASS_SUCCESS].copy()
+def plotDistributed(passes: pd.DataFrame, k):
+    data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)].copy()
+    param = ["X1", "Y1", "angle"]
 
-    X = data[filter].values
-    cluster = KMeans(n_clusters=int(k), random_state=69)
-    labels = cluster.fit_predict(X)
-    centroids = cluster.cluster_centers_
+    X = data[param].values
+    km = KMeans(n_clusters=int(k), random_state=69)
+    labels = km.fit_predict(X)
+    centroids = km.cluster_centers_
     data["label"] = labels
 
-    # closest = findClosest(centroids, X, 2)
+    closest = findClosest(centroids, X, 4)
+
+    pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
+    fig, axs = pitch.grid(
+                    ncols = n_col,
+                    nrows = 1 if k <= 4 else int(k / 4),
+                    grid_height = 0.85,
+                    title_height = 0.06,
+                    axis = False,
+                    endnote_height = 0.04,
+                    title_space = 0.04,
+                    endnote_space = 0.01
+                )
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, axs = pitch.grid(ncols=n_col, nrows=n_row, grid_height=0.85, title_height=0.06, axis=False,
@@ -211,21 +216,29 @@ def plotDistributed(passes: pd.DataFrame, k, n_col, n_row):
         clust_xT = clustered["xT"]
         n = "{0:,.2f}".format(np.mean(clust_xT) * 100)
 
-        ax.text(52.5, 74, f"xT per 100 pass: {n}",
+        ax.text(52.5, 74, f"xT per 100 passes: {n}",
                 ha='center', va='center', fontsize=10)
     
-        # pitch.scatter(clustered.X1, clustered.Y1, alpha=0.1, s=10, c=colors[i % len(colors)], ax=ax)
-        pitch.arrows(
-            clustered.X1, clustered.Y1,
-            clustered.X2, clustered.Y2,
-            color=colors[(i + j) % len(colors)],
-            ax=ax,
-            alpha=0.5,
-            width=0.5,
-        )
+        pitch.scatter(clustered.X1, clustered.Y1, alpha=0.1, s=10, c=colors[i % len(colors)], ax=ax)
+
+        for nodes in closest[i]:
+            x1 = nodes[0]
+            y1 = nodes[1]
+            angle = nodes[2]
+
+            dst = clustered.loc[
+                (clustered["X1"] == x1)
+                    & (clustered["Y1"] == y1)
+                    & (clustered["angle"] == angle)
+            ]
+
+            x2 = dst.X2
+            y2 = dst.Y2
+
+            pitch.arrows(x1, y1, x2, y2, width=1, alpha=0.7, ax=ax)
 
     axs['title'].text(
-        0.5, 0.5,
+        0.5, 0.2,
         f'{k} Cluster Sumber Passing Progresif\nBRI Super League 2025/26 hingga pekan ke-{week}',
         ha='center',
         va='center',
@@ -273,8 +286,8 @@ def plotPerTeam(passes: pd.DataFrame, attackings: pd.Series, k):
             )
 
     axs['title'].text(
-        0.5, 0.5,
-        "Top 2 Most Played Progressive Passes by Super League Teams",
+        0.5, 0.3,
+        "2 Tipe Passing Progressive yang Paling Sering Dilakukan Masing-masing Tim",
         ha='center',
         va='center',
         fontsize=20
@@ -321,8 +334,8 @@ def plotFacedThreat(passes: pd.DataFrame, defendings: pd.Series, k):
             )
 
     axs['title'].text(
-        0.5, 0.5,
-        "2 Most Faced Progressive Passes by Super League Teams",
+        0.5, 0.3,
+        "2 Passing Progressive yang Sering Dihadapi Masing-masing Tim",
         ha='center',
         va='center',
         fontsize=20
@@ -343,8 +356,6 @@ def plotOnce(passes: pd.DataFrame, k):
     pitch = Pitch(line_color='black', pitch_type = "custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, ax = pitch.draw(figsize=(8, 9))
     pitch.scatter(data.X1, data.Y1, alpha=0.4, s=50, c=labels, cmap=gruvbox, ax=ax)
-
-    closest = findClosest(centroids, X, 1)
 
     clusters = np.linspace(0, k-1, k)
 
@@ -382,33 +393,30 @@ def plotOnce(passes: pd.DataFrame, k):
 
     plt.show()
 
-# passes = processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"])
-
-# plotHist(passes)
-# elbowMethod(passes)
-# plotDistributed(passes, 11, 4, 3)
-# plotOnce(processPassData(df, ["Action", "X1", "Y1", "X2", "Y2"]), 11)
-# plotPerTeam(passes, teams, 11)
-# plotFacedThreat(passes, opponents, 11)
-
-def mapTopPlayer(src: pd.DataFrame, players: pd.DataFrame, head, k):
-    filter = ["X1", "Y1", "angle"]
+def mapTopPlayer(src: pd.DataFrame, players: pd.DataFrame, head, k, category):
+    param = ["X1", "Y1", "angle"]
     data = src.loc[(src["prog"] == True) & (src["Action"] == PASS_SUCCESS)]
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
-
-    rows = 1 if head <= 5 else int(head / 5)
-    fig, axs = pitch.grid(ncols=5, nrows=rows, grid_height=0.85, title_height=0.06, axis=False,
-                         endnote_height=0.04, title_space=0.04, endnote_space=0.01)
+    fig, axs = pitch.grid(
+                    ncols = 5,
+                    nrows = 1 if head <= 5 else int(head / 5),
+                    grid_height = 0.85,
+                    title_height = 0.06,
+                    axis = False,
+                    endnote_height = 0.04,
+                    title_space = 0.04,
+                    endnote_space = 0.01
+                )
 
     player_data = players.head(head).copy()
     names = player_data.Player
 
-    for i, (player, ax) in enumerate(zip(names, axs['pitch'].flat[:10])):
+    for i, (player, ax) in enumerate(zip(names, axs['pitch'].flat[:head])):
         ax.text(52.5, 74, f"{player}", ha='center', va='center', fontsize=10)
 
         pd = data.loc[data["Player"] == player].copy()
-        X = pd[filter].values
+        X = pd[param].values
         cluster = KMeans(n_clusters=int(k), random_state=69)
         labels = cluster.fit_predict(X)
         pd["label"] = labels
@@ -431,9 +439,85 @@ def mapTopPlayer(src: pd.DataFrame, players: pd.DataFrame, head, k):
                 width=0.8,
             )
 
+    map = {
+        "TotalProgressivePasses": "Jumlah Percobaan Passing Progresif",
+        "ProgressivePassSuccess": "Jumlah Passing Progresif Sukses",
+        "clean_xT": "Total xT",
+        "prog_xT": "xT dari Passing Progresif",
+        "xT per 100": "xT Tiap 100 Passing",
+    }
+
+    cat = map[category]
+
     axs['title'].text(
-        0.5, 0.5,
-        f"2 Most Played Progressive Passes by Top {head} Players in xT",
+        0.5, 0.15,
+        f"2 Passing Progressive Andalan dari Top {head} Pemain\nBerdasarkan {cat}",
+        ha='center',
+        va='center',
+        fontsize=20
+    )
+
+    plt.show()
+
+def mapTopPlayerPerTeam(src: pd.DataFrame, players, k, category):
+    param = ["X1", "Y1", "angle"]
+    data = src.loc[(src["prog"] == True) & (src["Action"] == PASS_SUCCESS)]
+
+    pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
+    fig, axs = pitch.grid(
+                    ncols = 6,
+                    nrows = 3,
+                    grid_height = 0.85,
+                    title_height = 0.06,
+                    axis = False,
+                    endnote_height = 0.04,
+                    title_space = 0.04,
+                    endnote_space = 0.01
+                )
+
+    for i, (player, ax) in enumerate(zip(players, axs['pitch'].flat[:18])):
+        pd = data.loc[data["Player"] == player].copy()
+
+        p_team = pd.Team.iloc[0]
+        ax.text(52.5, 79, f"[{p_team}]\n{player}", ha='center', va='center', fontsize=10)
+
+        X = pd[param].values
+        cluster = KMeans(n_clusters=int(k), random_state=69)
+        labels = cluster.fit_predict(X)
+        pd["label"] = labels
+
+        def max_2():
+            count = pd['label'].value_counts()
+            count = count.sort_values(ascending=False)
+            return count.head(2)
+
+        max_2 = max_2()
+
+        for j, clust in enumerate(max_2.index):
+            clustered = pd.loc[pd['label'] == clust]
+            pitch.arrows(
+                clustered.X1, clustered.Y1,
+                clustered.X2, clustered.Y2,
+                color=colors[(i + j) % len(colors)],
+                ax=ax,
+                alpha=0.5,
+                width=0.8,
+            )
+
+    map = {
+        "TotalProgressivePasses": "Jumlah Percobaan Passing Progresif",
+        "ProgressivePassSuccess": "Jumlah Passing Progresif Sukses",
+        "clean_xT": "Total xT",
+        "prog_xT": "xT dari Passing Progresif",
+        "xT per 100": "xT Tiap 100 Passing",
+        "TotalPasses": "Jumlah Passing",
+    }
+
+    cat = map[category]
+
+    axs['title'].text(
+        0.5, 0.15,
+        f"2 Passing Progressive Andalan dari Pemain Tertinggi Masing-masing Tim\nBerdasarkan {cat}",
         ha='center',
         va='center',
         fontsize=20
@@ -445,6 +529,7 @@ def playerData(passes: pd.DataFrame):
     players = passes["Player"].unique()
     player_passes = {
         "Player": [],
+        "Team": [],
         "TotalPasses": [],
         "PassSuccess": [],
         "TotalProgressivePasses": [],
@@ -459,11 +544,12 @@ def playerData(passes: pd.DataFrame):
         pr = pp.loc[pp["prog"] == True]
         cp = pp.loc[(pp["prog"] == True) & (pp["Action"] == PASS_SUCCESS)]
 
-        gross_xT = np.sum(pp["xT"])
-        clean_xT = np.sum(ps["xT"])
-        prog_xT = np.sum(cp["xT"])
+        gross_xT = np.sum(pp.xT)
+        clean_xT = np.sum(ps.xT)
+        prog_xT = np.sum(cp.xT)
 
         player_passes["Player"].append(player)
+        player_passes["Team"].append(pp.Team.iloc[0])
         player_passes["TotalPasses"].append(len(pp))
         player_passes["PassSuccess"].append(len(ps))
         player_passes["TotalProgressivePasses"].append(len(pr))
@@ -478,10 +564,50 @@ def playerData(passes: pd.DataFrame):
 
     return player_passes
 
-passes = processPassData(df, ["Action", "Player", "X1", "Y1", "X2", "Y2"])
-player_data = playerData(passes)
+def plotPlayerMap(passes: pd.DataFrame, category):
+    player_data = playerData(passes)
+    sorted = player_data.sort_values(by=category, ascending=False)
+    mapTopPlayer(passes, sorted, 10, 5, category)
 
-filtered = player_data.loc[player_data["TotalPasses"] >= 100]
-sorted = filtered.sort_values(by="clean_xT", ascending=False)
+def topPlayerPerTeamByCategory(passes: pd.DataFrame, category):
+    player_data = playerData(passes)
 
-mapTopPlayer(passes, sorted, 10, 5)
+    top_players = []
+
+    for team in teams:
+        team_data = player_data.loc[player_data["Team"] == team]
+        max_val = np.max(team_data[category])
+        top = team_data.loc[team_data[category] == max_val]
+
+        top_players.append(top.Player.iloc[0])
+
+    return top_players
+
+def plotTopPlayerPerTeam(passes: pd.DataFrame, category):
+    player_data = playerData(passes)
+    top_players = topPlayerPerTeamByCategory(passes, category)
+    mapTopPlayerPerTeam(passes, top_players, 5, category)
+
+def mapEachCategory(passes: pd.DataFrame):
+    data = pd.DataFrame({
+        "Team": teams,
+        "Total Passes": topPlayerPerTeamByCategory(passes, "TotalPasses"),
+        "Total Progressive Passes": topPlayerPerTeamByCategory(passes, "TotalProgressivePasses"),
+        "Progressive Pass Success": topPlayerPerTeamByCategory(passes, "ProgressivePassSuccess"),
+        "gross_xT (risk taker)": topPlayerPerTeamByCategory(passes, "gross_xT"),
+        "clean_xT (top creator)": topPlayerPerTeamByCategory(passes, "clean_xT"),
+    })
+
+    data.to_csv('./data2526/half_season/roles.csv', index=False)
+    # print(data)
+
+mapEachCategory(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]))
+# plotPlayerMap(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]), "ProgressivePassSuccess")
+# plotTopPlayerPerTeam(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]), "clean_xT")
+# plotHist(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]))
+# elbowMethod(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]))
+# plotDistributed(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), 11)
+# plotOnce(processPassData(df, ["Action", "X1", "Y1", "X2", "Y2"]), 11)
+# plotPerTeam(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), teams, 11)
+# plotFacedThreat(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
+
