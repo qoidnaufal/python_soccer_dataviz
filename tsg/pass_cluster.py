@@ -18,13 +18,19 @@ PITCH_Y = 68
 colors = ["#cc241d","#98971a","#d79921","#458588","#b16286","#689d6a","#d5c4a1","#d65d0e","#665c54"]
 gruvbox = ListedColormap(colors)
 
+def font(size: int):
+    return {'family': 'serif',
+            'weight': 'normal',
+            'size': size,
+            }
+
 def passOutput(input):
     if input == "passing":
         return PASS_SUCCESS
     else:
         return PASS_FAILED
 
-def length(frame):
+def length(frame: pd.DataFrame):
     dx = frame["X2"] - frame["X1"]
     dy = frame["Y2"] - frame["Y1"]
     return dx.apply(lambda x: x**2) + dy.apply(lambda y: y**2)
@@ -69,14 +75,10 @@ def isCorner(x1, y1):
     x = x1 == PITCH_X
     bot = y1 == PITCH_Y
     top = y1 == 0
-
-    return (x & bot) | (x & top)
-
-xT = pd.read_csv('/Users/qoidnaufal/Documents/LearnPython/xT_DS.csv',header=None)
-xT = np.array(xT)
-xT_rows, xT_cols = xT.shape
+    return (x & bot) or (x & top)
 
 df = pd.read_excel("./data2526/half_season/half_season.xlsx")
+df = df.rename(columns={"Act Name": "Player"})
 
 for idx, game in enumerate(df["Match"]):
     teams = game.split("vs")
@@ -93,53 +95,45 @@ for idx, game in enumerate(df["Match"]):
 
 teams = df["Team"].unique()
 opponents = df["Opponent"].unique()
-
-# team_ids = {}
-
-# for id, team in enumerate(teams):
-#     team_ids[team] = id
-
-# df["TeamId"] = df["Team"].map(team_ids)
 week = df["Gameweek"].max()
 
-passes = df.loc[df["Action"].str.contains("pass")][["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]].copy()
-passes = passes.dropna()
+def processPassData(f: pd.DataFrame, cols):
+    passes = f.loc[f["Action"].str.contains("pass")][cols].copy()
+    passes = passes.dropna()
 
-passes["Action"] = passes["Action"].apply(lambda x: passOutput(x))
-passes["X1"] = passes["X1"].apply(lambda x: x * PITCH_X/100)
-passes["X2"] = passes["X2"].apply(lambda x: x * PITCH_X/100)
-passes["Y1"] = passes["Y1"].apply(lambda y: y * PITCH_Y/100)
-passes["Y2"] = passes["Y2"].apply(lambda y: y * PITCH_Y/100)
+    passes["Action"] = passes["Action"].apply(lambda x: passOutput(x))
+    passes["X1"] = passes["X1"].apply(lambda x: x * PITCH_X/100)
+    passes["X2"] = passes["X2"].apply(lambda x: x * PITCH_X/100)
+    passes["Y1"] = passes["Y1"].apply(lambda y: PITCH_Y - (y * PITCH_Y/100))
+    passes["Y2"] = passes["Y2"].apply(lambda y: PITCH_Y - (y * PITCH_Y/100))
 
-passes = passes.loc[passes.apply(lambda row: isCorner(row["X1"], row["Y1"]) == False, axis=1)]
-passes = passes.reset_index(drop=True)
+    passes = passes.loc[passes.apply(lambda row: isCorner(row["X1"], row["Y1"]) == False, axis=1)]
+    passes = passes.reset_index(drop=True)
 
-passes["angle"] = np.arctan2(passes["Y2"] - passes["Y1"], passes["X2"] - passes["X1"]) * 180/np.pi
-passes["length"] = length(passes).apply(lambda d: math.sqrt(d))
-passes["prog"] = passes.apply(lambda row : prog(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
-passes["prog_distance"] = passes.apply(lambda row : distanceProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
-passes["prog_percent"] = passes.apply(lambda row : percentProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
+    passes["angle"] = np.arctan2(passes["Y2"] - passes["Y1"], passes["X2"] - passes["X1"]) * 180/np.pi
+    passes["length"] = length(passes).apply(lambda d: math.sqrt(d))
+    passes["prog"] = passes.apply(lambda row : prog(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
+    passes["prog_distance"] = passes.apply(lambda row : distanceProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
+    passes["prog_percent"] = passes.apply(lambda row : percentProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
 
-x1_bin = pd.cut(passes['X1'], bins = xT_cols, labels = False)
-y1_bin = pd.cut(passes['Y1'], bins = xT_rows, labels = False)
-x2_bin = pd.cut(passes['X2'], bins = xT_cols, labels = False)
-y2_bin = pd.cut(passes['Y2'], bins = xT_rows, labels = False)
+    xT = pd.read_csv('/Users/qoidnaufal/Documents/LearnPython/xT_DS.csv',header=None)
+    xT = np.array(xT)
+    xT_rows, xT_cols = xT.shape
 
-v1 = xT[y1_bin, x1_bin]
-v2 = xT[y2_bin, x2_bin]
-passes['xT'] = np.subtract(v2, v1)
+    x1_bin = pd.cut(passes['X1'], bins = xT_cols, labels = False)
+    y1_bin = pd.cut(passes['Y1'], bins = xT_rows, labels = False)
+    x2_bin = pd.cut(passes['X2'], bins = xT_cols, labels = False)
+    y2_bin = pd.cut(passes['Y2'], bins = xT_rows, labels = False)
 
-# print(passes.head(30))
-def font(size: int):
-    return {'family': 'serif',
-            'weight': 'normal',
-            'size': size,
-            }
+    v1 = xT[y1_bin, x1_bin]
+    v2 = xT[y2_bin, x2_bin]
+    passes['xT'] = np.subtract(v2, v1)
 
-def plotHist():
+    return passes
+
+def plotHist(data: pd.DataFrame):
     fig, ax = plt.subplots(figsize=(8, 9), layout='constrained')
-    # data = passes['prog_percent'].apply(lambda x: modifyPct(x))
-    fwd = passes.loc[passes["prog_percent"] >= 0]["prog_percent"]
+    fwd = data.loc[passes["prog_percent"] >= 0]["prog_percent"]
     median = np.median(fwd) # 20%
 
     style = {'edgecolor': '#282828', 'linewidth': 2}
@@ -160,14 +154,14 @@ def plotHist():
     plt.ylabel("Frekuensi")
     plt.show()
 
-def elbowMethod():
+def elbowMethod(data: pd.DataFrame):
     filter = ["X1", "Y1", "xT"]
-    median = np.median(passes.loc[passes["prog_percent"] >= 0]["prog_percent"])
-    data = passes.loc[passes["prog_percent"] > median]
-    data = data.loc[data["Action"] == PASS_SUCCESS].copy()
+    median = np.median(data.loc[data["prog_percent"] >= 0]["prog_percent"])
+    d = data.loc[data["prog_percent"] > median]
+    d = d.loc[d["Action"] == PASS_SUCCESS].copy()
 
     K = np.linspace(1, 20, 20)
-    X = data[filter].values
+    X = d[filter].values
     elbow = {"sse": [], "k": []}
     for k in K:
         cluster = KMeans(n_clusters = int(k), random_state = 69)
@@ -194,15 +188,7 @@ def findClosest(centroids, data, count: int):
     closest = [data[idx] for idx in indices]
     return closest
 
-def unpack(frame, c):
-    # cond1 = frame[filter[0]] == c[0]
-    # cond2 = frame[filter[1]] == c[1]
-    cond3 = frame[filter[2]] == c[2]
-    return frame.loc[cond3]
-    # max = np.max(frame[filter[2]])
-    # return frame.loc[frame[filter[2]] == max]
-
-def plotDistributed(k, n_col, n_row):
+def plotDistributed(passes: pd.DataFrame, k, n_col, n_row):
     filter = ["X1", "Y1", "xT"]
     median = np.median(passes.loc[passes["prog_percent"] >= 0]["prog_percent"])
     data = passes.loc[passes["prog_percent"] > median]
@@ -214,7 +200,7 @@ def plotDistributed(k, n_col, n_row):
     centroids = cluster.cluster_centers_
     data["label"] = labels
 
-    closest = findClosest(centroids, X, 2)
+    # closest = findClosest(centroids, X, 2)
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, axs = pitch.grid(ncols=n_col, nrows=n_row, grid_height=0.85, title_height=0.06, axis=False,
@@ -222,19 +208,21 @@ def plotDistributed(k, n_col, n_row):
 
     for i, (clust, ax) in enumerate(zip(np.linspace(0, k-1, k), axs['pitch'].flat[:k])):
         clustered = data.loc[data["label"] == clust]
-        param = clustered["xT"]
-        n = "{0:,.2f}".format(np.mean(param) * 100)
+        clust_xT = clustered["xT"]
+        n = "{0:,.2f}".format(np.mean(clust_xT) * 100)
 
         ax.text(52.5, 74, f"xT per 100 pass: {n}",
                 ha='center', va='center', fontsize=10)
-        # ax.text(52.5, 74, f"[Cluster {int(clust+1)}] xT per 100 pass: {n}",
-        #         ha='center', va='center', fontsize=10)
     
-        pitch.scatter(clustered.X1, clustered.Y1, alpha=0.1, s=10, c=colors[i % len(colors)], ax=ax)
-
-        # for c in closest[i]:
-        #     row = unpack(clustered, c)[["X1", "Y1", "X2", "Y2"]]
-        #     ax.quiver(row.X1, row.Y1, row.X2, row.Y2)
+        # pitch.scatter(clustered.X1, clustered.Y1, alpha=0.1, s=10, c=colors[i % len(colors)], ax=ax)
+        pitch.arrows(
+            clustered.X1, clustered.Y1,
+            clustered.X2, clustered.Y2,
+            color=colors[(i + j) % len(colors)],
+            ax=ax,
+            alpha=0.5,
+            width=0.5,
+        )
 
     axs['title'].text(
         0.5, 0.5,
@@ -246,18 +234,15 @@ def plotDistributed(k, n_col, n_row):
 
     plt.show()
 
-def plotPerTeam(k):
+def plotPerTeam(passes: pd.DataFrame, attackings: pd.Series, k):
     filter = ["X1", "Y1", "angle"]
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)]
-    # median = np.median(progs["prog_percent"])
-    # data = passes.loc[passes["prog_percent"] > median]
-    # data = data.loc[data["Action"] == PASS_SUCCESS]
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, axs = pitch.grid(ncols=6, nrows=3, grid_height=0.85, title_height=0.06, axis=False,
                          endnote_height=0.04, title_space=0.04, endnote_space=0.01)
 
-    for i, (team, ax) in enumerate(zip(teams, axs['pitch'].flat[:18])):
+    for i, (team, ax) in enumerate(zip(attackings, axs['pitch'].flat[:18])):
         ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
 
         team_data = data.loc[data["Team"] == team].copy()
@@ -278,7 +263,6 @@ def plotPerTeam(k):
 
         for j, clust in enumerate(max_2.index):
             clustered = team_data.loc[team_data['label'] == clust]
-            # pitch.scatter(clustered.X1, clustered.Y1, alpha=0.4, s=10, c=colors[(i + j) % len(colors)], ax=ax)
             pitch.arrows(
                 clustered.X1, clustered.Y1,
                 clustered.X2, clustered.Y2,
@@ -298,20 +282,18 @@ def plotPerTeam(k):
 
     plt.show()
 
-def plotFacedThreat(k):
+def plotFacedThreat(passes: pd.DataFrame, defendings: pd.Series, k):
     param = ["X1", "Y1", "angle"]
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)]
-    # median = np.median(progs["prog_percent"])
-    # data = progs.loc[(progs["prog_percent"] > median) & (passes["Action"] == PASS_SUCCESS)]
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, axs = pitch.grid(ncols=6, nrows=3, grid_height=0.85, title_height=0.06, axis=False,
                          endnote_height=0.04, title_space=0.04, endnote_space=0.01)
     
-    for i, (opp, ax) in enumerate(zip(opponents, axs['pitch'].flat[:18])):
-        ax.text(52.5, 74, f"{opp}", ha='center', va='center', fontsize=10)
+    for i, (team, ax) in enumerate(zip(defendings, axs['pitch'].flat[:18])):
+        ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
 
-        team_data = data.loc[data["Opponent"] == opp].copy()
+        team_data = data.loc[data["Opponent"] == team].copy()
         X = team_data[param].values
         cluster = KMeans(n_clusters=int(k), random_state=69)
         labels = cluster.fit_predict(X)
@@ -329,7 +311,6 @@ def plotFacedThreat(k):
 
         for j, clust in enumerate(max_2.index):
             clustered = team_data.loc[team_data['label'] == clust]
-            # pitch.scatter(clustered.X1, clustered.Y1, alpha=0.4, s=10, c=colors[(i + j) % len(colors)], ax=ax)
             pitch.arrows(
                 clustered.X1, clustered.Y1,
                 clustered.X2, clustered.Y2,
@@ -349,29 +330,158 @@ def plotFacedThreat(k):
 
     plt.show()
 
-def plotOnce(k):
-    filter = ["X1", "Y1", "xT"]
-    src = KMeans(k)
-    src.fit(passes[["X1", "Y1", "xT"]])
-    src_centroids = src.cluster_centers_
+def plotOnce(passes: pd.DataFrame, k):
+    data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)].copy()
+    param = ["X1", "Y1", "angle"]
 
-    dst = KMeans(k)
-    dst.fit(passes[["X2", "Y2", "xT"]])
-    dst_centroids = dst.cluster_centers_
+    X = data[param].values
+    km = KMeans(n_clusters=int(k), random_state=69)
+    labels = km.fit_predict(data[param])
+    centroids = km.cluster_centers_
+    data["label"] = labels
 
-    pitch = Pitch(line_color='black', pitch_type = "custom", pitch_length=105, pitch_width=68)
+    pitch = Pitch(line_color='black', pitch_type = "custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
     fig, ax = pitch.draw(figsize=(8, 9))
-    pitch.scatter(passes.X1, passes.Y1, alpha=0.4, s=50, c=src.labels_, cmap=gruvbox, ax=ax)
-    ax.quiver(src_centroids[:,0], src_centroids[:,1], dst_centroids[:,0], dst_centroids[:,1])
+    pitch.scatter(data.X1, data.Y1, alpha=0.4, s=50, c=labels, cmap=gruvbox, ax=ax)
 
-    title = plt.title("Progressive Pass Clusters BRI Super League 2025/26", fontdict=font(15))
+    closest = findClosest(centroids, X, 1)
+
+    clusters = np.linspace(0, k-1, k)
+
+    for clust in clusters:
+        cluster_data = data.loc[data["label"] == clust]
+
+        x1 = np.mean(cluster_data.X1)
+        y1 = np.mean(cluster_data.Y1)
+        x2 = np.mean(cluster_data.X2)
+        y2 = np.mean(cluster_data.Y2)
+
+        avg_xT = "{0:,.2f}".format(np.mean(cluster_data.xT) * 100)
+
+        pitch.arrows(x1, y1, x2, y2, width=2, ax=ax)
+
+        def xy_loc(y1, y2):
+            if y1 > y2:
+                return (0, 5)
+            elif y2 > y1:
+                return (0, -5)
+            else:
+                return (-20, 0)
+
+        ax.annotate(
+            f"{avg_xT} xT",
+            (x1, y1),
+            xytext=xy_loc(y1, y2),
+            ha='center',
+            va='center',
+            textcoords="offset points",
+            size=8
+        )
+
+    title = plt.title(f"{k} Progressive Pass Clusters in BRI Super League 2025/26", fontdict=font(15))
 
     plt.show()
 
+# passes = processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"])
 
-# plotHist()
-# elbowMethod()
-# plotDistributed(11, 4, 3)
-# plotOnce(11)
-plotPerTeam(11)
-# plotFacedThreat(11)
+# plotHist(passes)
+# elbowMethod(passes)
+# plotDistributed(passes, 11, 4, 3)
+# plotOnce(processPassData(df, ["Action", "X1", "Y1", "X2", "Y2"]), 11)
+# plotPerTeam(passes, teams, 11)
+# plotFacedThreat(passes, opponents, 11)
+
+def mapTopPlayer(src: pd.DataFrame, players: pd.DataFrame, head, k):
+    filter = ["X1", "Y1", "angle"]
+    data = src.loc[(src["prog"] == True) & (src["Action"] == PASS_SUCCESS)]
+
+    pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
+
+    rows = 1 if head <= 5 else int(head / 5)
+    fig, axs = pitch.grid(ncols=5, nrows=rows, grid_height=0.85, title_height=0.06, axis=False,
+                         endnote_height=0.04, title_space=0.04, endnote_space=0.01)
+
+    player_data = players.head(head).copy()
+    names = player_data.Player
+
+    for i, (player, ax) in enumerate(zip(names, axs['pitch'].flat[:10])):
+        ax.text(52.5, 74, f"{player}", ha='center', va='center', fontsize=10)
+
+        pd = data.loc[data["Player"] == player].copy()
+        X = pd[filter].values
+        cluster = KMeans(n_clusters=int(k), random_state=69)
+        labels = cluster.fit_predict(X)
+        pd["label"] = labels
+
+        def max_2():
+            count = pd['label'].value_counts()
+            count = count.sort_values(ascending=False)
+            return count.head(2)
+
+        max_2 = max_2()
+
+        for j, clust in enumerate(max_2.index):
+            clustered = pd.loc[pd['label'] == clust]
+            pitch.arrows(
+                clustered.X1, clustered.Y1,
+                clustered.X2, clustered.Y2,
+                color=colors[(i + j) % len(colors)],
+                ax=ax,
+                alpha=0.5,
+                width=0.8,
+            )
+
+    axs['title'].text(
+        0.5, 0.5,
+        f"2 Most Played Progressive Passes by Top {head} Players in xT",
+        ha='center',
+        va='center',
+        fontsize=20
+    )
+
+    plt.show()
+
+def playerData(passes: pd.DataFrame):
+    players = passes["Player"].unique()
+    player_passes = {
+        "Player": [],
+        "TotalPasses": [],
+        "PassSuccess": [],
+        "TotalProgressivePasses": [],
+        "ProgressivePassSuccess": [],
+        "gross_xT": [],
+        "clean_xT": [],
+        "prog_xT": [],
+    }
+    for player in players:
+        pp = passes.loc[passes["Player"] == player]
+        ps = pp.loc[pp["Action"] == PASS_SUCCESS]
+        pr = pp.loc[pp["prog"] == True]
+        cp = pp.loc[(pp["prog"] == True) & (pp["Action"] == PASS_SUCCESS)]
+
+        gross_xT = np.sum(pp["xT"])
+        clean_xT = np.sum(ps["xT"])
+        prog_xT = np.sum(cp["xT"])
+
+        player_passes["Player"].append(player)
+        player_passes["TotalPasses"].append(len(pp))
+        player_passes["PassSuccess"].append(len(ps))
+        player_passes["TotalProgressivePasses"].append(len(pr))
+        player_passes["ProgressivePassSuccess"].append(len(cp))
+        player_passes["gross_xT"].append(gross_xT)
+        player_passes["clean_xT"].append(clean_xT)
+        player_passes["prog_xT"].append(prog_xT)
+
+    player_passes = pd.DataFrame(player_passes)
+    player_passes["xT per 100"] = (player_passes.clean_xT / player_passes.TotalPasses) * 100
+    # player_passes["xT per 100 progression"] = (player_passes.prog_xT / player_passes.TotalProgressivePasses) * 100
+
+    return player_passes
+
+passes = processPassData(df, ["Action", "Player", "X1", "Y1", "X2", "Y2"])
+player_data = playerData(passes)
+
+filtered = player_data.loc[player_data["TotalPasses"] >= 100]
+sorted = filtered.sort_values(by="clean_xT", ascending=False)
+
+mapTopPlayer(passes, sorted, 10, 5)
