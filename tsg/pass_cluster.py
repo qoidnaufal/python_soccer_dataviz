@@ -15,6 +15,13 @@ PASS_SUCCESS = 1
 PITCH_X = 105
 PITCH_Y = 68
 
+PENALTY_BOX_DEPTH = 16.5
+PENALTY_BOX_WIDTH = 40.3
+
+PENALTY_BOX_X = PITCH_X - PENALTY_BOX_DEPTH
+PENALTY_BOX_Y_MAX = PITCH_Y/2 + PENALTY_BOX_WIDTH/2
+PENALTY_BOX_Y_MIN = PITCH_Y/2 - PENALTY_BOX_WIDTH/2
+
 colors = ["#cc241d","#98971a","#d79921","#458588","#b16286","#689d6a","#d5c4a1","#d65d0e","#665c54"]
 gruvbox = ListedColormap(colors)
 
@@ -183,16 +190,18 @@ def findClosest(centroids, data, count: int):
     closest = [data[idx] for idx in indices]
     return closest
 
+def cluster(data: np.ndarray, k: int):
+    cluster = KMeans(n_clusters=k, random_state=69)
+    labels = cluster.fit_predict(data)
+    centroids = cluster.cluster_centers_
+    return labels, centroids
+
 def plotDistributed(passes: pd.DataFrame, k):
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)].copy()
     param = ["X1", "Y1", "angle"]
 
-    X = data[param].values
-    km = KMeans(n_clusters=int(k), random_state=69)
-    labels = km.fit_predict(X)
-    centroids = km.cluster_centers_
+    labels, centroids = cluster(data[param].to_numpy(), k)
     data["label"] = labels
-
     closest = findClosest(centroids, X, 4)
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
@@ -248,7 +257,7 @@ def plotDistributed(passes: pd.DataFrame, k):
     plt.show()
 
 def plotPerTeam(passes: pd.DataFrame, attackings: pd.Series, k):
-    filter = ["X1", "Y1", "angle"]
+    params = ["X1", "Y1", "angle"]
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)]
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
@@ -259,9 +268,7 @@ def plotPerTeam(passes: pd.DataFrame, attackings: pd.Series, k):
         ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
 
         team_data = data.loc[data["Team"] == team].copy()
-        X = team_data[filter].values
-        cluster = KMeans(n_clusters=int(k), random_state=69)
-        labels = cluster.fit_predict(X)
+        labels, _ = cluster(team_data[params].to_numpy(), k)
         team_data["label"] = labels
 
         def max_2():
@@ -296,7 +303,7 @@ def plotPerTeam(passes: pd.DataFrame, attackings: pd.Series, k):
     plt.show()
 
 def plotFacedThreat(passes: pd.DataFrame, defendings: pd.Series, k):
-    param = ["X1", "Y1", "angle"]
+    params = ["X1", "Y1", "angle"]
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)]
 
     pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
@@ -307,9 +314,7 @@ def plotFacedThreat(passes: pd.DataFrame, defendings: pd.Series, k):
         ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
 
         team_data = data.loc[data["Opponent"] == team].copy()
-        X = team_data[param].values
-        cluster = KMeans(n_clusters=int(k), random_state=69)
-        labels = cluster.fit_predict(X)
+        labels, _ = cluster(team_data[params].to_numpy(), k)
         team_data["label"] = labels
 
         def max_2():
@@ -343,14 +348,121 @@ def plotFacedThreat(passes: pd.DataFrame, defendings: pd.Series, k):
 
     plt.show()
 
+def plotFinalThirdEntry(passes: pd.DataFrame, defendings: pd.Series, k: int):
+    params = ["X1", "Y1", "angle"]
+    data = passes.loc[
+        (passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)
+            & ((passes["X2"] < PENALTY_BOX_X)
+                | (
+                    (passes["Y2"] < PENALTY_BOX_Y_MIN)
+                    | (passes["Y2"] > PENALTY_BOX_Y_MAX)
+                ))
+    ]
+
+    pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
+    fig, axs = pitch.grid(ncols=6, nrows=3, grid_height=0.85, title_height=0.06, axis=False,
+                         endnote_height=0.04, title_space=0.04, endnote_space=0.01)
+
+    for i, (team, ax) in enumerate(zip(defendings, axs["pitch"].flat[:18])):
+        ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
+
+        team_data = data.loc[data["Opponent"] == team].copy()
+        labels, _ = cluster(team_data[params].to_numpy(), k)
+        team_data["group"] = labels
+
+        entry = team_data.loc[
+            (team_data["X1"] < 2 * PITCH_X/3)
+                & (team_data["X2"] >= 2 * PITCH_X/3)
+        ]
+
+        def max_2(f: pd.DataFrame):
+            count = f["group"].value_counts()
+            count = count.sort_values(ascending=False)
+            return count.head(2)
+
+        for j, clust in enumerate(max_2(entry).index):
+            clustered = entry.loc[entry["group"] == clust]
+
+            pitch.arrows(
+                clustered.X1, clustered.Y1,
+                clustered.X2, clustered.Y2,
+                color=colors[(i + j) % len(colors)],
+                ax=ax,
+                alpha=0.5,
+                width=0.5,
+            )
+
+    axs['title'].text(
+        0.5, 0.3,
+        "2 Passing Progressive ke Sepertiga Akhir yang Sering Dihadapi Masing-masing Tim",
+        ha='center',
+        va='center',
+        fontsize=20
+    )
+
+    plt.show()
+
+def plotPenaltyBoxEntry(passes: pd.DataFrame, defendings: pd.Series, k: int):
+    params = ["X1", "Y1", "angle"]
+    data = passes.loc[
+        (passes["Action"] == PASS_SUCCESS)
+            & (passes["X1"] < PITCH_X)
+            & (passes["X2"] >= PENALTY_BOX_X)
+            & (passes["Y2"] >= PENALTY_BOX_Y_MIN)
+            & (passes["Y2"] <= PENALTY_BOX_Y_MAX)
+    ]
+
+    pitch = Pitch(line_color='black', pitch_type="custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
+    fig, axs = pitch.grid(ncols=6, nrows=3, grid_height=0.85, title_height=0.06, axis=False,
+                         endnote_height=0.04, title_space=0.04, endnote_space=0.01)
+
+    for i, (team, ax) in enumerate(zip(defendings, axs["pitch"].flat[:18])):
+        ax.text(52.5, 74, f"{team}", ha='center', va='center', fontsize=10)
+
+        team_data = data.loc[data["Opponent"] == team].copy()
+        labels, _ = cluster(team_data[params].to_numpy(), k)
+        team_data["group"] = labels
+
+        entry = team_data.loc[
+            (team_data["X1"] < PENALTY_BOX_X)
+                | (
+                    (team_data["Y1"] < PENALTY_BOX_Y_MIN)
+                    | (team_data["Y1"] > PENALTY_BOX_Y_MAX)
+                )
+        ]
+
+        def max_2(f: pd.DataFrame):
+            count = f["group"].value_counts()
+            count = count.sort_values(ascending=False)
+            return count.head(2)
+
+        for j, clust in enumerate(max_2(entry).index):
+            clustered = entry.loc[entry["group"] == clust]
+
+            pitch.arrows(
+                clustered.X1, clustered.Y1,
+                clustered.X2, clustered.Y2,
+                color=colors[(i + j) % len(colors)],
+                ax=ax,
+                alpha=0.5,
+                width=0.5,
+            )
+
+    axs['title'].text(
+        0.5, 0.3,
+        "2 Passing ke Kotak Penalti yang Sering Dihadapi Masing-masing Tim",
+        ha='center',
+        va='center',
+        fontsize=20
+    )
+
+    plt.show()
+
 def plotOnce(passes: pd.DataFrame, k):
     data = passes.loc[(passes["prog"] == True) & (passes["Action"] == PASS_SUCCESS)].copy()
     param = ["X1", "Y1", "angle"]
 
-    X = data[param].values
-    km = KMeans(n_clusters=int(k), random_state=69)
-    labels = km.fit_predict(data[param])
-    centroids = km.cluster_centers_
+    labels, _ = cluster(data[params].to_numpy(), k)
     data["label"] = labels
 
     pitch = Pitch(line_color='black', pitch_type = "custom", pitch_length=PITCH_X, pitch_width=PITCH_Y)
@@ -599,9 +711,8 @@ def mapEachCategory(passes: pd.DataFrame):
     })
 
     data.to_csv('./data2526/half_season/roles.csv', index=False)
-    # print(data)
 
-mapEachCategory(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]))
+# mapEachCategory(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]))
 # plotPlayerMap(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]), "ProgressivePassSuccess")
 # plotTopPlayerPerTeam(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2", "Y2"]), "clean_xT")
 # plotHist(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]))
@@ -609,5 +720,6 @@ mapEachCategory(processPassData(df, ["Action", "Player", "Team", "X1", "Y1", "X2
 # plotDistributed(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), 11)
 # plotOnce(processPassData(df, ["Action", "X1", "Y1", "X2", "Y2"]), 11)
 # plotPerTeam(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), teams, 11)
-# plotFacedThreat(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
-
+# plotFacedThreat(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
+# plotFinalThirdEntry(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
+plotPenaltyBoxEntry(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 7)
