@@ -52,7 +52,7 @@ def setMatchId(df: pd.DataFrame):
     df["MatchId"] = df["Match"].map(match_ids)
     return df
 
-df = pd.read_excel("./data2526/half_season/20260105_updated.xlsx")
+df = pd.read_excel("../../data2526/half_season/20260105_updated.xlsx")
 df = df.rename(columns={"Act Name": "Player"})
 
 for idx, game in enumerate(df["Match"]):

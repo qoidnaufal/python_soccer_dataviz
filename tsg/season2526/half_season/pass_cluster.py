@@ -84,7 +84,7 @@ def isCorner(x1, y1):
     top = y1 == 0
     return (x & bot) or (x & top)
 
-df = pd.read_excel("./data2526/half_season/half_season.xlsx")
+df = pd.read_excel("../../data2526/half_season/half_season.xlsx")
 df = df.rename(columns={"Act Name": "Player"})
 
 for idx, game in enumerate(df["Match"]):
@@ -118,7 +118,7 @@ def processPassData(f: pd.DataFrame, cols):
     passes["prog_distance"] = passes.apply(lambda row : distanceProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
     passes["prog_percent"] = passes.apply(lambda row : percentProgressed(row["X1"], row["Y1"], row["X2"], row["Y2"]), axis = 1)
 
-    xT = pd.read_csv('/Users/qoidnaufal/Documents/LearnPython/xT_DS.csv',header=None)
+    xT = pd.read_csv('../../../xT_DS.csv',header=None)
     xT = np.array(xT)
     xT_rows, xT_cols = xT.shape
 
