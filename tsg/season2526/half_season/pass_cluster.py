@@ -722,4 +722,4 @@ def mapEachCategory(passes: pd.DataFrame):
 # plotPerTeam(processPassData(df, ["Team", "Opponent", "Action", "X1", "Y1", "X2", "Y2"]), teams, 11)
 # plotFacedThreat(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
 # plotFinalThirdEntry(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 11)
-plotPenaltyBoxEntry(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 7)
+# plotPenaltyBoxEntry(processPassData(df, ["Opponent", "Action", "X1", "Y1", "X2", "Y2"]), opponents, 7)

@@ -9,7 +9,7 @@ from matplotlib.colors import ListedColormap
 COLORS = ["#cc241d","#b8bb26","#d79921","#83a598","#b16286","#689d6a","#d5c4a1","#d65d0e","#7c6f64","#98971a","#458588"]
 GRUVBOX = ListedColormap(COLORS)
 
-COLORS_V = ["#cc241d","#fe9018","#b8bb26","#458588","#fabd2f"]
+COLORS_V = ["#fb4934","#fe9018","#b8bb26","#458588","#d79921"]
 GRUVBOX_V = ListedColormap(COLORS_V)
 
 COLORS_H = ["#b8bb26","#458588","#fe9018","#458588","#b8bb26"]
@@ -62,8 +62,8 @@ for idx, game in enumerate(df["Match"]):
     df.at[idx, "Opponent"] = away if df.at[idx, "Team"] == home else home
 
 WEEK = df["Gameweek"].max()
-TEAMS = df["Team"].unique()
-OPPONENTS = df["Opponent"].unique()
+ATTACKING = df["Team"].unique()
+DEFENDING = df["Opponent"].unique()
 
 def processData(frame: pd.DataFrame, is_def):
     data = frame.loc[frame["Action"].isin(DEF_ACTIONS if is_def else PASSES)].copy()
@@ -246,30 +246,58 @@ def plotDefensiveZonePerTeam(data: df.DataFrame, teams: pd.Series, div):
                 x_mean = clustered.X1.mean()
                 ax.text(x_mean, -6, f"{pct_val}%", ha='center', va='center', fontsize=9)
             else:
-                own_count = len(team_data.loc[team_data["X1"] < PITCH_X / 2].Y1)
                 own_half = clustered.loc[clustered["X1"] < PITCH_X / 2].Y1
+                own_count = len(team_data.loc[team_data["X1"] < PITCH_X / 2].Y1)
                 pct_val = round((len(own_half) / own_count) * 100)
                 ax.text(PITCH_X/3.5, own_half.mean(), f"{pct_val}%", ha="center", va="center", fontsize=9)
 
-                opp_count = len(team_data.loc[team_data["X1"] >= PITCH_X / 2].Y1)
                 opp_half = clustered.loc[clustered["X1"] >= PITCH_X / 2].Y1
+                opp_count = len(team_data.loc[team_data["X1"] >= PITCH_X / 2].Y1)
                 pct_val = round((len(opp_half) / opp_count) * 100)
                 ax.text(PITCH_X - PITCH_X/3.5, opp_half.mean(), f"{pct_val}%", ha="center", va="center", fontsize=9)
 
         if div == "Y1":
             ax.text(0, -6, "Own Half", ha="left", va="center", fontsize=7)
             ax.text(PITCH_X, -6, "Opponent's Half", ha="right", va="center", fontsize=7)
+        else:
+            own_half = team_data.loc[team_data["X1"] < PITCH_X / 2].Y1
+            own_pct = round((len(own_half) / len(team_data)) * 100, 2)
+
+            opp_half = team_data.loc[team_data["X1"] >= PITCH_X / 2].Y1
+            opp_pct = round((len(opp_half) / len(team_data)) * 100, 2)
+
+            ax.text(
+                PITCH_X / 2 - 6, -16,
+                f"{own_pct}%",
+                color = 'black',
+                ha = 'right',
+                va = 'center',
+                fontsize = 12,
+                bbox={'facecolor': '#ebdbb2', 'pad': 2}
+            )
+            ax.text(
+                PITCH_X / 2 + 6, -16,
+                f"{opp_pct}%",
+                color = 'black',
+                ha = 'left',
+                va = 'center',
+                fontsize = 12,
+                bbox={'facecolor': '#ebdbb2', 'pad': 2}
+            )
+
+            # ax.text(q, PITCH_Y / 10, f"{own_pct}%", ha="center", va="center", fontsize=12)
+            # ax.text(q * 2, PITCH_Y / 10, f"{opp_pct}%", ha="center", va="center", fontsize=12)
 
     cat = {
-        "X1": "Zona Vertikal",
-        "Y1": "Koridor Horizontal"
+        "X1": "Aktivitas Aksi Bertahan Masing-masing Tim",
+        "Y1": "Aktivitas Aksi Bertahan Masing-masing Tim Berdasarkan Koridor Vertikal"
     }
 
     t = cat[div]
 
     axs['title'].text(
         0.5, 0.2,
-        f"Aktivitas Aksi Bertahan Masing-masing Tim Berdasarkan {t}\nBRI Super League 2025/26",
+        f"{t}\nBRI Super League 2025/26",
         ha='center',
         va='center',
         fontsize=20
@@ -278,6 +306,6 @@ def plotDefensiveZonePerTeam(data: df.DataFrame, teams: pd.Series, div):
     plt.show()
 
 # plotZoneDensity(processData(df, True), 4)
-plotClusteredZoneDensityPerTeam(processData(df, True), TEAMS, 11)
-# plotMostTargetedZonePerTeam(processData(df, False), OPPONENTS, 11)
-# plotDefensiveZonePerTeam(processData(df, True), TEAMS, "X1")
+# plotClusteredZoneDensityPerTeam(processData(df, True), DEFENDING, 11)
+# plotMostTargetedZonePerTeam(processData(df, False), DEFENDING, 11)
+plotDefensiveZonePerTeam(processData(df, True), DEFENDING, "X1")
