@@ -8,65 +8,72 @@ from matplotlib.patches import ConnectionPatch
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
 fig.subplots_adjust(wspace=0)
 fig.text(
-    0.5, 0.95, "Academy Product Contribution in BRI Liga 1 2024/25",
+    0.5, 0.95, "Academy Product Contribution in BRI Super League 2025/26",
     size=20,
     ha="center", color="#000000"
 )
 
-total_minutes = 11 * 34 * 90 * 18
+# players on field * total games * 90 * total clubs
+TOTAL_MINUTES_L1 = 11 * 34 * 90 * 18
 
 # ###################################################
 #
-#                      FOREIGN
+# FOREIGN
 #
 # ###################################################
 
-foreign = pd.read_csv("~/Documents/LearnPython/tsg2425/data/mop.csv")
-foreign = foreign.loc[
-    foreign['Nationality'].str.contains('Indonesia') == False
-]
-foreign_minutes = foreign['MoP'].sum()
-foreign_contribution = foreign_minutes / total_minutes
+mop = pd.read_csv("~/Documents/LearnPython/tsg/youth_data/2526/mop.csv")
+
+foreign = mop.loc[(mop['Nationality'].str.contains('Indonesia') == False) & (mop['Competition'].str.contains('BRI') == True)]
+foreign_minutes = foreign['MOP'].sum()
+foreign_contribution = foreign_minutes / TOTAL_MINUTES_L1
 
 # ###################################################
 #
-#              ADJUSTED ACADEMY PRODUCT
+# ADJUSTED ACADEMY PRODUCT
 #
 # ###################################################
 
-adjusted_ap = pd.read_csv("~/Documents/LearnPython/tsg2425/data/adjusted_data_bri_liga1.csv")
-adjusted_ap = adjusted_ap.sort_values(by=['Adjusted Total Minutes'], ascending=False)
-adjusted_ap = adjusted_ap.set_index('Club Name')
+ap = pd.read_csv("~/Documents/LearnPython/tsg/youth_data/2526/academy_product.csv")
+ap["L1 Minutes"] = ap["Minutes in Club"] + ap["Minutes in Liga 1"]
 
-total_adjusted_ap_minutes = adjusted_ap['Adjusted Total Minutes'].sum()
-# adjusted_max_ap_minutes = adjusted_ap['Adjusted Total Minutes'].max()
-adjusted_ap_contribution = total_adjusted_ap_minutes / total_minutes
+ap_club = ap.sort_values(by=['Adj Minutes in Club'], ascending=False)
+ap_club = ap_club.set_index('Club Name')
+adjusted_club_ap_minutes = ap_club['Adj Minutes in Club'].sum()
+club_ap_contribution = adjusted_club_ap_minutes / TOTAL_MINUTES_L1
 
-# ###################################################
-#
-#           NON ADJUSTED ACADEMY PRODUCT
-#
-# ###################################################
+ap_l1 = ap.sort_values(by=['Adj Minutes in Liga 1'], ascending=False)
+ap_l1 = ap_l1.set_index('Club Name')
+adjusted_l1_ap_minutes = ap_l1['Adj Minutes in Liga 1'].sum()
+l1_ap_contribution = adjusted_l1_ap_minutes / TOTAL_MINUTES_L1
 
-ap = pd.read_csv("./data/ap.csv")
-ap = ap.sort_values(by=['AP minutes'], ascending=False)
-ap = ap.set_index('Klub')
-
-total_ap_minutes = ap['AP minutes'].sum()
-max_ap_minutes = ap['AP minutes'].max()
+total_adjusted_ap_minutes = adjusted_club_ap_minutes + adjusted_l1_ap_minutes
+adjusted_ap_contribution = club_ap_contribution + l1_ap_contribution
 
 # ###################################################
 #
-#                  LOCAL PLAYERS
+# NON ADJUSTED ACADEMY PRODUCT
 #
 # ###################################################
 
-non_ap_players_minutes = total_minutes - foreign_minutes - total_adjusted_ap_minutes
-non_ap_contribution = non_ap_players_minutes / total_minutes
+ap_l1_all = ap.sort_values(by=['L1 Minutes'], ascending=False)
+ap_l1_all = ap_l1_all.set_index('Club Name')
+
+total_ap_minutes = ap_l1_all['L1 Minutes'].sum()
+max_ap_minutes = ap_l1_all['L1 Minutes'].max()
 
 # ###################################################
 #
-#                  PLOTTING DATA
+# LOCAL PLAYERS
+#
+# ###################################################
+
+non_ap_players_minutes = TOTAL_MINUTES_L1 - foreign_minutes - total_adjusted_ap_minutes
+non_ap_contribution = non_ap_players_minutes / TOTAL_MINUTES_L1
+
+# ###################################################
+#
+# PLOTTING DATA
 #
 # ###################################################
 
@@ -76,53 +83,88 @@ explode = [0.1, 0, 0]
 
 # prepare
 angle = -180 * dist[0]
-wedges, *_ = ax1.pie(dist, autopct='%1.1f%%', startangle=angle, labels=labels, explode=explode)
-wedges[0].set(color='#5CB338')
+wedges, pie_labels, auto_txts = ax1.pie(dist, autopct='%1.1f%%', startangle=angle, labels=labels, explode=explode, labeldistance=0.75)
+
+wedges[0].set(color='#5CB338', edgecolor='black', linewidth=2)
 wedges[1].set(color='#578FCA')
 wedges[2].set(color='#F79B72')
+
+x0, y0 = auto_txts[0].get_position()
+pie_labels[0].set_position((x0, y0 + 0.2))
+
+x1, y1 = auto_txts[1].get_position()
+pie_labels[1].set_position((x1, y1 + 0.2))
+
+x2, y2 = auto_txts[2].get_position()
+pie_labels[2].set_position((x2, y2 + 0.2))
 
 bottom = 1
 width = 0.2
 
 # bar chart
 # ap_params = adjusted_ap['Adjusted Total Minutes'].apply(lambda x: x / total_adjusted_ap_minutes).to_list()
-ap_params = ap['AP minutes'].apply(lambda x: x / total_ap_minutes).to_list()
-ap_labels = ap.index.to_list()
+ap_params = ap_l1_all['L1 Minutes'].apply(lambda x: x / total_ap_minutes).to_list()
+ap_labels = ap_l1_all.index.to_list()
 # print(ap_labels)
 
 colors = {
     "Persija Jakarta": "#DF2C20",
     "Persib Bandung": "blue",
     "Persebaya Surabaya": "green",
-    "Barito Putera": "yellow",
+    "Bhayangkara Presisi Lampung FC": "yellow",
     "Persis Solo": "red",
     "Persita Tangerang": "purple",
     "PSM Makassar": "red",
     "Bali United": "red",
-    "PSIS Semarang": "blue",
-    "PSS Sleman": "green",
+    "PSIM Yogyakarta": "blue",
+    "Persijap Jepara": "red",
     "Borneo FC": "red",
     "Semen Padang": "red",
     "Arema FC": "blue",
     "Dewa United": "#FAC60D",
     "Madura United": "red",
     "Persik Kediri": "purple",
-    "PSBS Biak": "blue",
+    "PSBS Biak": "cyan",
     "Malut United": "red"
 }
+
+# colors = {
+#     "Persija Jakarta": "#DF2C20",
+#     "Persib Bandung": "blue",
+#     "Persebaya Surabaya": "green",
+#     "Barito Putera": "yellow",
+#     "Persis Solo": "red",
+#     "Persita Tangerang": "purple",
+#     "PSM Makassar": "red",
+#     "Bali United": "red",
+#     "PSIS Semarang": "blue",
+#     "PSS Sleman": "green",
+#     "Borneo FC": "red",
+#     "Semen Padang": "red",
+#     "Arema FC": "blue",
+#     "Dewa United": "#FAC60D",
+#     "Madura United": "red",
+#     "Persik Kediri": "purple",
+#     "PSBS Biak": "blue",
+#     "Malut United": "red"
+# }
 
 # Adding from the top matches the legend.
 for j, (height, label) in enumerate([*zip(ap_params, ap_labels)]):
     bottom -= height
-    bc = ax2.bar(0, height, width, bottom=bottom, color=colors.get(label), label=label,
-                 alpha=max([height*total_ap_minutes/(max_ap_minutes), 0.5-(j/100)]))
-    value = ap.loc[label, 'AP minutes']
-    ax2.bar_label(bc, labels=[value], label_type='center')
+    # alpha = max([height*total_ap_minutes/(max_ap_minutes), 0.5-(j/100)])
+    # alpha = np.clip(alpha, 0, 1)
+    bc = ax2.bar(0, height, width, bottom=bottom, color=colors.get(label), edgecolor='black', label=label, alpha=1.0)
+    value = ap_l1_all.loc[label, 'L1 Minutes']
+    color = 'white'
+    if label == "Bhayangkara Presisi Lampung FC" or label == "Dewa United":
+        color = 'black'
+    ax2.bar_label(bc, labels=[value], label_type='center', color=color)
 
-ax2.set_title('Minutes Contribution')
-ax2.legend(loc='center right')
+# ax2.set_title('Minutes Contribution')
+ax2.legend(title='Clubs', loc='center right')
 ax2.axis('off')
-ax2.set_xlim(- 2.5 * width, 2.5 * width)
+ax2.set_xlim(-width, 2.5 * width)
 
 # use ConnectionPatch to draw lines between the two plots
 theta1, theta2 = wedges[0].theta1, wedges[0].theta2
@@ -134,7 +176,8 @@ x = r * np.cos(np.pi / 180 * theta2) + center[0]
 y = r * np.sin(np.pi / 180 * theta2) + center[1]
 con = ConnectionPatch(xyA=(-width / 2, bar_height), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
 con.set_color([0, 0, 0])
-con.set_linewidth(2)
+con.set_linewidth(1)
+con.set_linestyle("--")
 ax2.add_artist(con)
 
 # draw bottom connecting line
@@ -142,7 +185,10 @@ x = r * np.cos(np.pi / 180 * theta1) + center[0]
 y = r * np.sin(np.pi / 180 * theta1) + center[1]
 con = ConnectionPatch(xyA=(-width / 2, 0), coordsA=ax2.transData, xyB=(x, y), coordsB=ax1.transData)
 con.set_color([0, 0, 0])
+con.set_linewidth(1)
+con.set_linestyle("--")
 ax2.add_artist(con)
-con.set_linewidth(2)
+
+ax1.axis('off')
 
 plt.show()
