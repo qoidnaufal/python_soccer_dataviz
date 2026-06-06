@@ -35,20 +35,19 @@ foreign_contribution = foreign_minutes / TOTAL_MINUTES_L1
 # ###################################################
 
 ap = pd.read_csv("~/Documents/LearnPython/tsg/youth_data/2526/academy_product.csv")
-ap["L1 Minutes"] = ap["Minutes in Club"] + ap["Minutes in Liga 1"]
 
-ap_club = ap.sort_values(by=['Adj Minutes in Club'], ascending=False)
-ap_club = ap_club.set_index('Club Name')
-adjusted_club_ap_minutes = ap_club['Adj Minutes in Club'].sum()
+# ap_club = ap.sort_values(by=['Adj Minutes in Club'], ascending=False)
+# ap_club = ap_club.set_index('Club Name')
+adjusted_club_ap_minutes = ap['Adj Minutes in Club'].sum()
 club_ap_contribution = adjusted_club_ap_minutes / TOTAL_MINUTES_L1
 
-ap_l1 = ap.sort_values(by=['Adj Minutes in Liga 1'], ascending=False)
-ap_l1 = ap_l1.set_index('Club Name')
-adjusted_l1_ap_minutes = ap_l1['Adj Minutes in Liga 1'].sum()
-l1_ap_contribution = adjusted_l1_ap_minutes / TOTAL_MINUTES_L1
+# ap_l1 = ap.sort_values(by=['Adj Minutes in Liga 1'], ascending=False)
+# ap_l1 = ap_l1.set_index('Club Name')
+adjusted_other_ap_minutes = ap['Adj Minutes in Other Liga 1'].sum()
+other_ap_contribution = adjusted_other_ap_minutes / TOTAL_MINUTES_L1
 
-total_adjusted_ap_minutes = adjusted_club_ap_minutes + adjusted_l1_ap_minutes
-adjusted_ap_contribution = club_ap_contribution + l1_ap_contribution
+total_adjusted_ap_minutes = adjusted_club_ap_minutes + adjusted_other_ap_minutes
+adjusted_ap_contribution = club_ap_contribution + other_ap_contribution
 
 # ###################################################
 #
@@ -56,11 +55,11 @@ adjusted_ap_contribution = club_ap_contribution + l1_ap_contribution
 #
 # ###################################################
 
-ap_l1_all = ap.sort_values(by=['L1 Minutes'], ascending=False)
-ap_l1_all = ap_l1_all.set_index('Club Name')
+ap_l1 = ap.sort_values(by=['Minutes in Liga 1'], ascending=False)
+ap_l1 = ap_l1.set_index('Club Name')
 
-total_ap_minutes = ap_l1_all['L1 Minutes'].sum()
-max_ap_minutes = ap_l1_all['L1 Minutes'].max()
+total_ap_minutes = ap_l1['Minutes in Liga 1'].sum()
+max_ap_minutes = ap_l1['Minutes in Liga 1'].max()
 
 # ###################################################
 #
@@ -103,8 +102,8 @@ width = 0.2
 
 # bar chart
 # ap_params = adjusted_ap['Adjusted Total Minutes'].apply(lambda x: x / total_adjusted_ap_minutes).to_list()
-ap_params = ap_l1_all['L1 Minutes'].apply(lambda x: x / total_ap_minutes).to_list()
-ap_labels = ap_l1_all.index.to_list()
+ap_params = ap_l1['Minutes in Liga 1'].apply(lambda x: x / total_ap_minutes).to_list()
+ap_labels = ap_l1.index.to_list()
 # print(ap_labels)
 
 colors = {
@@ -155,7 +154,7 @@ for j, (height, label) in enumerate([*zip(ap_params, ap_labels)]):
     # alpha = max([height*total_ap_minutes/(max_ap_minutes), 0.5-(j/100)])
     # alpha = np.clip(alpha, 0, 1)
     bc = ax2.bar(0, height, width, bottom=bottom, color=colors.get(label), edgecolor='black', label=label, alpha=1.0)
-    value = ap_l1_all.loc[label, 'L1 Minutes']
+    value = ap_l1.loc[label, 'Minutes in Liga 1']
     color = 'white'
     if label == "Bhayangkara Presisi Lampung FC" or label == "Dewa United":
         color = 'black'

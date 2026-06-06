@@ -220,59 +220,90 @@ struct YouthClub {
 
     #[serde(rename(serialize = "Registered"))]
     players_count: usize,
-    #[serde(rename(serialize = "in Club"))]
-    in_club: usize,
     #[serde(rename(serialize = "in Liga 1"))]
     in_l1: usize,
+    #[serde(rename(serialize = "in Club"))]
+    in_club: usize,
+    #[serde(rename(serialize = "in Other Liga 1"))]
+    in_other_l1: usize,
     #[serde(rename(serialize = "in Liga 2"))]
     in_l2: usize,
 
     #[serde(rename(serialize = "Players with Minutes"))]
     players_with_minutes: usize,
-    #[serde(rename(serialize = "Played in Club"))]
-    with_minutes_in_club: usize,
+
     #[serde(rename(serialize = "Played in Liga 1"))]
     with_minutes_in_l1: usize,
+    #[serde(rename(serialize = "Played in Club"))]
+    with_minutes_in_club: usize,
+    #[serde(rename(serialize = "Played in Other Liga 1"))]
+    with_minutes_in_other_l1: usize,
+
+    #[serde(rename(serialize = "Played in Liga 2"))]
+    with_minutes_in_l2: usize,
     #[serde(rename(serialize = "Played in Liga 2 Regular Teams"))]
     with_minutes_in_l2_regular: usize,
     #[serde(rename(serialize = "Played in Liga 2 Playoff Teams"))]
     with_minutes_in_l2_playoff: usize,
+    #[serde(rename(serialize = "Played in Liga 2 Final Teams"))]
+    with_minutes_in_l2_final: usize,
 
     #[serde(rename(serialize = "Adj Total Games"))]
     adj_games: u32,
     #[serde(rename(serialize = "Adj Total Minutes"))]
     adj_minutes: u32,
-    #[serde(rename(serialize = "Adj Minutes in Club"))]
-    adj_minutes_in_club: u32,
+
     #[serde(rename(serialize = "Adj Minutes in Liga 1"))]
     adj_minutes_in_l1: u32,
+    #[serde(rename(serialize = "Adj Minutes in Club"))]
+    adj_minutes_in_club: u32,
+    #[serde(rename(serialize = "Adj Minutes in Other Liga 1"))]
+    adj_minutes_in_other_l1: u32,
+
+    #[serde(rename(serialize = "Adj Minutes in Liga 2"))]
+    adj_minutes_in_l2: u32,
     #[serde(rename(serialize = "Adj Minutes in Liga 2 Regular Teams"))]
     adj_minutes_in_l2_regular: u32,
     #[serde(rename(serialize = "Adj Minutes in Liga 2 Playoff Teams"))]
     adj_minutes_in_l2_playoff: u32,
+    #[serde(rename(serialize = "Adj Minutes in Liga 2 Final Teams"))]
+    adj_minutes_in_l2_final: u32,
 
-    #[serde(rename(serialize = "Minutes in Club"))]
-    minutes_in_club: u32,
+    #[serde(rename(serialize = "Total Minutes"))]
+    total_minutes: u32,
+    #[serde(rename(serialize = "Total Games"))]
+    total_games: u32,
+
     #[serde(rename(serialize = "Minutes in Liga 1"))]
     minutes_in_l1: u32,
+    #[serde(rename(serialize = "Minutes in Club"))]
+    minutes_in_club: u32,
+    #[serde(rename(serialize = "Minutes in Other Liga 1"))]
+    minutes_in_other_l1: u32,
+
     #[serde(rename(serialize = "Minutes in Liga 2"))]
     minutes_in_l2: u32,
     #[serde(rename(serialize = "Minutes in Liga 2 Regular"))]
     minutes_in_l2_regular: u32,
     #[serde(rename(serialize = "Minutes in Liga 2 Playoff"))]
     minutes_in_l2_playoff: u32,
+    #[serde(rename(serialize = "Minutes in Liga 2 Final"))]
+    minutes_in_l2_final: u32,
 
     #[serde(skip)]
     players: Vec<Player>,
 }
 
-const PLAYOFF_TEAMS: [ClubName; 6] = [
-    ClubName::Garudayaksa,
-    ClubName::PSSSleman,
+const PLAYOFF_TEAMS: [ClubName; 4] = [
     ClubName::Adhyaksa,
     ClubName::Persipura,
     ClubName::PersibaBalikpapan,
     ClubName::Persekat
+];
+
+const FINAL_TEAMS: [ClubName; 2] = [
+    ClubName::Garudayaksa,
+    ClubName::PSSSleman,
 ];
 
 fn get_ap_data<F, const N: usize>(
@@ -291,9 +322,17 @@ where
         .for_each(|(name, data)| {
             let len = data.youth_club.len() as f32;
             let player_minutes = data.minutes.round() as u32;
+            let player_games = data.games.round() as u32;
             let adj_minutes = (data.minutes / len).round() as u32;
             let adj_games = (data.games / len).round() as u32;
-            let with_minute = (data.minutes > 0.) as usize;
+            let with_minute = data.minutes > 0.;
+            let played = with_minute as usize;
+
+            let l1 = matches!(data.competition, CompetitionTier::BRILiga1);
+            let l2 = matches!(data.competition, CompetitionTier::PegadaianLiga2);
+            let l2_playoff = PLAYOFF_TEAMS.contains(&data.club_now);
+            let l2_final = FINAL_TEAMS.contains(&data.club_now);
+            let l2_regular = !l2_playoff && !l2_final;
 
             for club in &data.youth_club {
                 youth_clubs
@@ -302,43 +341,61 @@ where
                         yc.adj_minutes += adj_minutes;
                         yc.adj_games += adj_games;
                         yc.players_count += 1;
-                        yc.players_with_minutes += with_minute;
+                        yc.players_with_minutes += played;
+                        yc.total_minutes += player_minutes;
+                        yc.total_games += player_games;
+
                         match data.competition {
                             CompetitionTier::BRILiga1 => {
-                                if *club != data.club_now {
-                                    yc.in_l1 += 1;
-                                    yc.with_minutes_in_l1 += with_minute;
-                                    yc.minutes_in_l1 += player_minutes;
-                                    yc.adj_minutes_in_l1 += adj_minutes;
-                                } else {
+                                yc.in_l1 += 1;
+                                yc.with_minutes_in_l1 += played;
+                                yc.minutes_in_l1 += player_minutes;
+                                yc.adj_minutes_in_l1 += adj_minutes;
+
+                                if *club == data.club_now {
                                     yc.in_club += 1;
-                                    yc.with_minutes_in_club += with_minute;
+                                    yc.with_minutes_in_club += played;
                                     yc.minutes_in_club += player_minutes;
                                     yc.adj_minutes_in_club += adj_minutes;
+                                }
+                                if *club != data.club_now {
+                                    yc.in_other_l1 += 1;
+                                    yc.with_minutes_in_other_l1 += played;
+                                    yc.minutes_in_other_l1 += player_minutes;
+                                    yc.adj_minutes_in_other_l1 += adj_minutes;
                                 }
                             },
                             CompetitionTier::PegadaianLiga2 => {
                                 yc.in_l2 += 1;
+                                yc.with_minutes_in_l2 += played;
                                 yc.minutes_in_l2 += player_minutes;
+                                yc.adj_minutes_in_l2 += adj_minutes;
 
-                                if PLAYOFF_TEAMS.contains(&data.club_now) {
-                                    yc.with_minutes_in_l2_regular += with_minute;
+                                if l2_playoff {
+                                    yc.with_minutes_in_l2_playoff += played;
                                     yc.minutes_in_l2_playoff += player_minutes;
                                     yc.adj_minutes_in_l2_playoff += adj_minutes;
-                                } else {
-                                    yc.with_minutes_in_l2_playoff += with_minute;
+                                }
+                                if l2_final {
+                                    yc.with_minutes_in_l2_final += played;
+                                    yc.minutes_in_l2_final += player_minutes;
+                                    yc.adj_minutes_in_l2_final += adj_minutes;
+                                }
+                                if l2_regular {
+                                    yc.with_minutes_in_l2_regular += played;
                                     yc.minutes_in_l2_regular += player_minutes;
                                     yc.adj_minutes_in_l2_regular += adj_minutes;
                                 }
                             },
                         }
+
                         yc.players.push(Player {
                             name: name.clone(),
                             dob: data.dob.clone(),
                             minutes: data.minutes,
                             games: data.games,
                             pos: data.pos,
-                            club_now: data.club_now.clone(),
+                            club_now: data.club_now,
                             competition: data.competition,
                             y_competition: data.y_competition,
                             youth_clubs: len as u8,
@@ -348,29 +405,44 @@ where
                         club_name: *club,
 
                         players_count: 1,
+                        in_l1: l1 as usize,
                         in_club: (*club == data.club_now) as usize,
-                        in_l1: (matches!(data.competition, CompetitionTier::BRILiga1) && *club != data.club_now) as usize,
-                        in_l2: matches!(data.competition, CompetitionTier::PegadaianLiga2) as usize,
+                        in_other_l1: (l1 && *club != data.club_now) as usize,
+                        in_l2: l2 as usize,
 
-                        players_with_minutes: (data.minutes > 0.) as usize,
-                        with_minutes_in_club: ((data.minutes > 0.) && data.club_now == *club) as usize,
-                        with_minutes_in_l1: ((data.minutes > 0.) && (matches!(data.competition, CompetitionTier::BRILiga1) && data.club_now == *club)) as usize,
-                        with_minutes_in_l2_regular: ((data.minutes > 0.) && (matches!(data.competition, CompetitionTier::PegadaianLiga2) && !PLAYOFF_TEAMS.contains(&data.club_now))) as usize,
-                        with_minutes_in_l2_playoff: ((data.minutes > 0.) && (matches!(data.competition, CompetitionTier::PegadaianLiga2) && PLAYOFF_TEAMS.contains(&data.club_now))) as usize,
+                        players_with_minutes: played,
+                        with_minutes_in_l1: (with_minute && l1) as usize,
+                        with_minutes_in_club: (with_minute && data.club_now == *club) as usize,
+                        with_minutes_in_other_l1: (with_minute && (l1 && data.club_now == *club)) as usize,
+
+                        with_minutes_in_l2: (with_minute && l2) as usize,
+                        with_minutes_in_l2_regular: (with_minute && (l2 && l2_regular)) as usize,
+                        with_minutes_in_l2_playoff: (with_minute && (l2 && l2_playoff)) as usize,
+                        with_minutes_in_l2_final: (with_minute && (l2 && l2_final)) as usize,
 
                         adj_games,
-
                         adj_minutes,
-                        adj_minutes_in_club: adj_minutes * ((matches!(data.competition, CompetitionTier::BRILiga1) && *club == data.club_now) as u32),
-                        adj_minutes_in_l1: adj_minutes * ((matches!(data.competition, CompetitionTier::BRILiga1) && *club != data.club_now) as u32),
-                        adj_minutes_in_l2_regular: adj_minutes * ((matches!(data.competition, CompetitionTier::PegadaianLiga2) && !PLAYOFF_TEAMS.contains(&data.club_now)) as u32),
-                        adj_minutes_in_l2_playoff: adj_minutes * ((matches!(data.competition, CompetitionTier::PegadaianLiga2) && PLAYOFF_TEAMS.contains(&data.club_now)) as u32),
 
-                        minutes_in_club: player_minutes * ((matches!(data.competition, CompetitionTier::BRILiga1) && *club == data.club_now) as u32),
-                        minutes_in_l1: player_minutes * ((matches!(data.competition, CompetitionTier::BRILiga1) && *club != data.club_now) as u32),
-                        minutes_in_l2: player_minutes * (matches!(data.competition, CompetitionTier::PegadaianLiga2) as u32),
-                        minutes_in_l2_regular: player_minutes * ((matches!(data.competition, CompetitionTier::PegadaianLiga2) && !PLAYOFF_TEAMS.contains(&data.club_now)) as u32),
-                        minutes_in_l2_playoff: player_minutes * ((matches!(data.competition, CompetitionTier::PegadaianLiga2) && PLAYOFF_TEAMS.contains(&data.club_now)) as u32),
+                        adj_minutes_in_l1: adj_minutes * (l1 as u32),
+                        adj_minutes_in_club: adj_minutes * ((l1 && *club == data.club_now) as u32),
+                        adj_minutes_in_other_l1: adj_minutes * ((l1 && *club != data.club_now) as u32),
+
+                        adj_minutes_in_l2: adj_minutes * (l2 as u32),
+                        adj_minutes_in_l2_regular: adj_minutes * ((l2 && l2_regular) as u32),
+                        adj_minutes_in_l2_playoff: adj_minutes * ((l2 && l2_playoff) as u32),
+                        adj_minutes_in_l2_final: adj_minutes * ((l2 && l2_final) as u32),
+
+                        total_minutes: player_minutes,
+                        total_games: player_games,
+
+                        minutes_in_l1: player_minutes * (l1 as u32),
+                        minutes_in_club: player_minutes * ((l1 && *club == data.club_now) as u32),
+                        minutes_in_other_l1: player_minutes * ((l1 && *club != data.club_now) as u32),
+
+                        minutes_in_l2: player_minutes * (l2 as u32),
+                        minutes_in_l2_regular: player_minutes * ((l2 && l2_regular) as u32),
+                        minutes_in_l2_playoff: player_minutes * ((l2 && l2_playoff) as u32),
+                        minutes_in_l2_final: player_minutes * ((l2 && l2_final) as u32),
 
                         players: {
                             vec![Player {
@@ -399,28 +471,44 @@ where
             club_name: *c,
 
             players_count: 0,
-            in_club: 0,
             in_l1: 0,
+            in_club: 0,
+            in_other_l1: 0,
             in_l2: 0,
 
             players_with_minutes: 0,
-            with_minutes_in_club: 0,
             with_minutes_in_l1: 0,
+            with_minutes_in_club: 0,
+            with_minutes_in_other_l1: 0,
+
+            with_minutes_in_l2: 0,
             with_minutes_in_l2_regular: 0,
             with_minutes_in_l2_playoff: 0,
+            with_minutes_in_l2_final: 0,
 
             adj_games: 0,
             adj_minutes: 0,
-            adj_minutes_in_club: 0,
+
             adj_minutes_in_l1: 0,
+            adj_minutes_in_club: 0,
+            adj_minutes_in_other_l1: 0,
+
+            adj_minutes_in_l2: 0,
             adj_minutes_in_l2_regular: 0,
             adj_minutes_in_l2_playoff: 0,
+            adj_minutes_in_l2_final: 0,
 
-            minutes_in_club: 0,
+            total_minutes: 0,
+            total_games: 0,
+
             minutes_in_l1: 0,
+            minutes_in_club: 0,
+            minutes_in_other_l1: 0,
+
             minutes_in_l2: 0,
             minutes_in_l2_regular: 0,
             minutes_in_l2_playoff: 0,
+            minutes_in_l2_final: 0,
 
             players: vec![],
         });
